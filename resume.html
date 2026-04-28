@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIで物語を作ろう — レジュメ</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+      font-size: 13.5px;
+      line-height: 1.65;
+      color: #222;
+      background: #fff;
+    }
+    .page {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 24px 32px;
+    }
+
+    /* ── ヘッダー ── */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 3px solid #5c6bc0;
+      padding-bottom: 10px;
+      margin-bottom: 16px;
+    }
+    .header-left {}
+    .series-badge {
+      display: inline-block;
+      background: #5c6bc0;
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 10px;
+      border-radius: 20px;
+      margin-bottom: 4px;
+      letter-spacing: 0.05em;
+    }
+    h1 {
+      font-size: 21px;
+      color: #333;
+      letter-spacing: 0.02em;
+    }
+    .header-right {
+      font-size: 11.5px;
+      color: #888;
+      text-align: right;
+      line-height: 1.7;
+    }
+
+    /* ── ゴール ── */
+    .goal-box {
+      background: #ede7f6;
+      border-left: 4px solid #5c6bc0;
+      padding: 9px 14px;
+      border-radius: 0 8px 8px 0;
+      margin-bottom: 16px;
+    }
+    .goal-box .label {
+      font-size: 11px;
+      font-weight: bold;
+      color: #5c6bc0;
+      margin-bottom: 3px;
+      letter-spacing: 0.08em;
+    }
+    .goal-box ul {
+      padding-left: 16px;
+      font-size: 13px;
+    }
+    .goal-box li { margin-bottom: 1px; }
+
+    /* ── タイムライン ── */
+    .section-title {
+      font-size: 13px;
+      font-weight: bold;
+      color: #5c6bc0;
+      border-left: 3px solid #5c6bc0;
+      padding-left: 7px;
+      margin: 18px 0 8px;
+      letter-spacing: 0.05em;
+    }
+    .timeline {
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      font-size: 12.5px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 18px;
+    }
+    .tl-row {
+      display: contents;
+    }
+    .tl-time {
+      background: #f3f0fb;
+      color: #5c6bc0;
+      font-weight: bold;
+      text-align: center;
+      padding: 6px 4px;
+      border-bottom: 1px solid #e0daf5;
+      font-size: 12px;
+    }
+    .tl-content {
+      padding: 6px 12px;
+      border-bottom: 1px solid #eee;
+    }
+    .tl-content strong { font-size: 13px; }
+    .tl-content span { color: #555; font-size: 12px; }
+    .tl-row:last-child .tl-time,
+    .tl-row:last-child .tl-content { border-bottom: none; }
+    .tl-main .tl-time { background: #5c6bc0; color: #fff; }
+    .tl-main .tl-content { background: #f8f6ff; font-weight: bold; }
+
+    /* ── キーワード ── */
+    .keyword-section { margin-bottom: 18px; }
+    .kw-category { margin-bottom: 12px; }
+    .kw-category-label {
+      font-size: 12px;
+      font-weight: bold;
+      color: #444;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .kw-category-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #ddd;
+    }
+    .kw-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+
+    /* チェックボックス付きキーワード */
+    .kw-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1.5px solid #bbb;
+      border-radius: 20px;
+      padding: 3px 10px 3px 7px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      user-select: none;
+    }
+    .kw-label input[type="checkbox"] { display: none; }
+    .kw-check {
+      width: 11px;
+      height: 11px;
+      border: 1.5px solid #aaa;
+      border-radius: 3px;
+      flex-shrink: 0;
+      background: #fff;
+      display: inline-block;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .kw-label:has(input:checked) {
+      background: #5c6bc0;
+      border-color: #5c6bc0;
+      color: #fff;
+    }
+    .kw-label:has(input:checked) .kw-check {
+      background: #fff;
+      border-color: #fff;
+    }
+
+    /* ── プロンプト解説 ── */
+    .prompt-section {
+      border: 1.5px solid #ddd;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 18px;
+      font-size: 13px;
+    }
+    .prompt-section h3 {
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    .prompt-formula {
+      background: #fff8e1;
+      border: 1.5px solid #ffc107;
+      border-radius: 7px;
+      padding: 9px 13px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      line-height: 1.8;
+    }
+    .prompt-formula .formula-line {
+      font-size: 14px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 4px;
+    }
+    .prompt-formula .parts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 12px;
+    }
+    .part {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .part-tag {
+      background: #ffc107;
+      color: #333;
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-weight: bold;
+      font-size: 11px;
+    }
+    .part-plus { color: #aaa; font-size: 13px; }
+
+    .compare-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .compare-card {
+      border-radius: 7px;
+      padding: 9px 11px;
+    }
+    .compare-card.bad {
+      background: #fff5f5;
+      border: 1px solid #f99;
+    }
+    .compare-card.good {
+      background: #f1fdf4;
+      border: 1px solid #7bc67e;
+    }
+    .compare-card .card-label {
+      font-size: 11px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .compare-card.bad .card-label { color: #c62828; }
+    .compare-card.good .card-label { color: #2e7d32; }
+    .compare-card .prompt-text {
+      background: #fff;
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-size: 11.5px;
+      color: #333;
+      line-height: 1.7;
+    }
+    .compare-card .reason {
+      margin-top: 5px;
+      font-size: 11px;
+      color: #666;
+    }
+
+    .prompt-tips {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #444;
+    }
+    .prompt-tips li {
+      padding-left: 14px;
+      position: relative;
+      margin-bottom: 2px;
+    }
+    .prompt-tips li::before {
+      content: '▸';
+      position: absolute;
+      left: 0;
+      color: #5c6bc0;
+    }
+
+    /* ── 記入欄 ── */
+    .write-section { margin-bottom: 10px; }
+    .write-box {
+      border: 1.5px solid #ccc;
+      border-radius: 9px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+    }
+    .write-box h3 {
+      font-size: 12.5px;
+      font-weight: bold;
+      color: #5c6bc0;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .write-lines .line {
+      border-bottom: 1px solid #ddd;
+      height: 26px;
+      margin-bottom: 0;
+    }
+    .chara-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+    .chara-card {
+      border: 1px solid #ddd;
+      border-radius: 7px;
+      padding: 8px 10px;
+    }
+    .chara-card .field {
+      font-size: 10.5px;
+      color: #888;
+      margin-bottom: 3px;
+    }
+    .chara-card .val-line {
+      border-bottom: 1px solid #ddd;
+      height: 22px;
+      margin-bottom: 6px;
+    }
+
+    /* ── フッター ── */
+    .footer {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #aaa;
+      text-align: center;
+      border-top: 1px solid #eee;
+      padding-top: 8px;
+    }
+
+    /* ── 印刷設定 ── */
+    @media print {
+      body { font-size: 12.5px; }
+      .page { padding: 10px 18px; max-width: 100%; }
+      .kw-label:has(input:checked) {
+        background: #5c6bc0 !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .goal-box {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .prompt-formula {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .compare-card {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .tl-main .tl-time {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="header-left">
+      <div class="series-badge">第1回 ／ 全3回シリーズ</div>
+      <h1>AIで物語を作ろう</h1>
+    </div>
+    <div class="header-right">
+      ふれあいタイム<br>
+      2026年5月11日（月）<br>
+      45分
+    </div>
+  </div>
+
+  <!-- ゴール -->
+  <div class="goal-box">
+    <div class="label">TODAY'S GOAL</div>
+    <ul>
+      <li>Gemini（AI）を使って、<strong>サウンドノベル用のショートストーリー素材</strong>を作る</li>
+      <li>完成物：あらすじ（100〜150字）＋ 登場キャラ 2〜3人の設定</li>
+      <li>次回（5/18）でこの素材をゲームにする！</li>
+    </ul>
+  </div>
+
+  <!-- タイムライン -->
+  <div class="section-title">⏱ タイムライン</div>
+  <div class="timeline">
+    <div class="tl-row">
+      <div class="tl-time">0〜5分</div>
+      <div class="tl-content"><strong>イントロ</strong> <span>— 3回シリーズの説明・今日のゴール確認</span></div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-time">5〜15分</div>
+      <div class="tl-content"><strong>Gemini 体験</strong> <span>— ファシリがデモ → 各自ログインして試し打ち</span></div>
+    </div>
+    <div class="tl-row tl-main">
+      <div class="tl-time">15〜38分</div>
+      <div class="tl-content"><strong>メイン作業</strong> <span>— キーワードを選んであらすじ＆キャラを作る</span></div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-time">38〜43分</div>
+      <div class="tl-content"><strong>保存・紹介</strong> <span>— テキストをコピー保存、1〜2人プロジェクターで発表</span></div>
+    </div>
+    <div class="tl-row">
+      <div class="tl-time">43〜45分</div>
+      <div class="tl-content"><strong>次回予告</strong> <span>— 「来週これをゲームにするよ！」</span></div>
+    </div>
+  </div>
+
+  <!-- キーワード選択 -->
+  <div class="section-title">🗂 STEP 1 ： キーワードを選ぼう</div>
+  <p style="font-size:12px; color:#555; margin-bottom:10px;">気に入ったキーワードに ✔ をつけて、自分だけのストーリーの設定を決めよう。いくつ選んでもOK！</p>
+
+  <div class="keyword-section">
+
+    <div class="kw-category">
+      <div class="kw-category-label">ジャンル</div>
+      <div class="kw-grid">
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>ファンタジー</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>SF（未来・宇宙）</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>ミステリー</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>ホラー</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>青春・日常</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>恋愛</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>アクション・冒険</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>コメディ</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>バトル</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>感動系</label>
+      </div>
+    </div>
+
+    <div class="kw-category">
+      <div class="kw-category-label">舞台・場所</div>
+      <div class="kw-grid">
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>学校</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>異世界</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>近未来都市</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>廃墟・廃校</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>宇宙船・宇宙ステーション</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>田舎の村</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>地下迷宮</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>無人島</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>魔法学校</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>現代日本</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>夢の中</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>異国・中世ヨーロッパ</label>
+      </div>
+    </div>
+
+    <div class="kw-category">
+      <div class="kw-category-label">テーマ・エッセンス</div>
+      <div class="kw-grid">
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>友情</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>裏切り</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>成長・変化</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>復讐</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>秘密</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>選択・決断</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>孤独</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>救済・助け合い</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>記憶・忘却</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>正体・変装</label>
+      </div>
+    </div>
+
+    <div class="kw-category">
+      <div class="kw-category-label">主人公の設定</div>
+      <div class="kw-grid">
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>ふつうの中学生</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>転校生</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>天才・秀才</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>ひとりが好きな子</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>異能・魔法使い</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>探偵・調査員</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>記憶を失った人</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>AI・ロボット</label>
+      </div>
+    </div>
+
+    <div class="kw-category">
+      <div class="kw-category-label">雰囲気・トーン</div>
+      <div class="kw-grid">
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>ドキドキ・ハラハラ</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>じんわり切ない</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>あったかい・ほっこり</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>不思議・幻想的</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>ゾクっとする</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>笑える・ゆるい</label>
+        <label class="kw-label"><input type="checkbox"><span class="kw-check"></span>シリアス・重め</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- プロンプト解説 -->
+  <div class="section-title">✍️ STEP 2 ： Gemini へのプロンプトの書き方</div>
+
+  <div class="prompt-section">
+    <h3>プロンプトって何？</h3>
+    <p style="font-size:12.5px; margin-bottom:10px; color:#444;">
+      AIに渡す「指示文」のこと。プロンプトの書き方しだいで、AIの答えがガラっと変わる！
+    </p>
+
+    <div class="prompt-formula">
+      <div class="formula-line">基本の公式</div>
+      <div class="parts">
+        <div class="part"><span class="part-tag">①キャラ・設定</span></div>
+        <span class="part-plus">＋</span>
+        <div class="part"><span class="part-tag">②状況・展開</span></div>
+        <span class="part-plus">＋</span>
+        <div class="part"><span class="part-tag">③お願い（形式）</span></div>
+      </div>
+    </div>
+
+    <div class="compare-grid">
+      <div class="compare-card bad">
+        <div class="card-label">❌ あいまいな例</div>
+        <div class="prompt-text">「物語を作って」</div>
+        <div class="reason">→ AIが何でも決めてしまい、思い通りにならない</div>
+      </div>
+      <div class="compare-card good">
+        <div class="card-label">✅ 詳しい例</div>
+        <div class="prompt-text">「舞台は廃校、主人公は記憶を失った中学生の女の子。同級生の幽霊と出会うホラーのあらすじを150字以内で書いて」</div>
+        <div class="reason">→ 設定・形式・文字数まで指定してばっちり！</div>
+      </div>
+    </div>
+
+    <ul class="prompt-tips" style="margin-top:12px;">
+      <li><strong>文字数を指定</strong>しよう（例：「150字以内で」「3行で」）</li>
+      <li>気に入らなかったら<strong>「もっと怖くして」「主人公を男の子に変えて」</strong>と追加指示を出せばOK</li>
+      <li><strong>「3案出して」</strong>と頼むと選択肢が増えて便利！</li>
+      <li>日本語でそのまま話しかけてOK。敬語じゃなくても大丈夫</li>
+    </ul>
+  </div>
+
+  <!-- プロンプトテンプレート -->
+  <div class="prompt-section" style="background:#fafafa;">
+    <h3>📋 コピーして使えるプロンプトテンプレート</h3>
+    <div style="background:#fff; border:1px solid #ddd; border-radius:6px; padding:10px 13px; font-size:12.5px; line-height:2; color:#333; margin-top:8px;">
+      舞台は【　　　　　　　】、主人公は【　　　　　　　】。<br>
+      【　　　　　　　】がテーマの【　　　ジャンル　　　】のショートストーリーを考えて。<br>
+      あらすじを150字以内で書いて。登場人物は2〜3人で、それぞれ名前と一言キャラ説明もつけて。
+    </div>
+  </div>
+
+  <!-- 記入欄 -->
+  <div class="section-title">📝 STEP 3 ： 作ったものを書き留めよう</div>
+
+  <div class="write-box">
+    <h3>あらすじ（100〜150字）</h3>
+    <div class="write-lines">
+      <div class="line"></div>
+      <div class="line"></div>
+      <div class="line"></div>
+      <div class="line"></div>
+    </div>
+  </div>
+
+  <div class="write-box">
+    <h3>登場キャラクター設定</h3>
+    <div class="chara-grid">
+      <div class="chara-card">
+        <div class="field">キャラ 1（主人公）</div>
+        <div class="field">名前</div>
+        <div class="val-line"></div>
+        <div class="field">一言設定</div>
+        <div class="val-line"></div>
+        <div class="val-line"></div>
+      </div>
+      <div class="chara-card">
+        <div class="field">キャラ 2</div>
+        <div class="field">名前</div>
+        <div class="val-line"></div>
+        <div class="field">一言設定</div>
+        <div class="val-line"></div>
+        <div class="val-line"></div>
+      </div>
+      <div class="chara-card">
+        <div class="field">キャラ 3</div>
+        <div class="field">名前</div>
+        <div class="val-line"></div>
+        <div class="field">一言設定</div>
+        <div class="val-line"></div>
+        <div class="val-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フッター -->
+  <div class="footer">
+    ふれあいタイム ｜ 第1回「AIで物語を作ろう」｜ 2026.5.11 ／ 次回 5.18「サウンドノベルを作ろう①」
+  </div>
+
+</div>
+</body>
+</html>

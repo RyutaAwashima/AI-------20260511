@@ -1,0 +1,129 @@
+{
+  "meta": {
+    "id": "sample_002",
+    "title": "今日も放課後はカオスです",
+    "genre": "学園ガールズコメディ",
+    "author": "サンプル",
+    "created_at": "2026-04-27T00:00:00Z",
+    "assets": {
+      "characters": {
+        "miku": { "name": "ミク",   "sprite": "miku.png" },
+        "aoi":  { "name": "アオイ", "sprite": "aoi.png" },
+        "nana": { "name": "ナナ",   "sprite": "nana.png" }
+      },
+      "backgrounds": {
+        "classroom": "bg_classroom_afternoon.jpg",
+        "clubroom":  "bg_clubroom.jpg",
+        "shop":      "bg_shop.jpg"
+      },
+      "bgm": {
+        "cheerful":   "bgm_cheerful.mp3",
+        "silly":      "bgm_silly.mp3",
+        "triumphant": "bgm_triumphant.mp3"
+      }
+    },
+    "assets_needed": [
+      "miku.png — 天然ボケ系女子（表情: normal / happy / confused）",
+      "aoi.png — ツッコミ系女子（表情: normal / angry / surprised / tired）",
+      "nana.png — マイペース系女子（表情: normal / smile / blank）",
+      "bg_classroom_afternoon.jpg — 明るい放課後の教室",
+      "bg_clubroom.jpg — やや散らかった部室",
+      "bg_shop.jpg — 雑貨・パワーストーンショップ",
+      "bgm_cheerful.mp3 — 軽快でポップなBGM",
+      "bgm_silly.mp3 — おとぼけ感のあるコミカルBGM",
+      "bgm_triumphant.mp3 — 大げさに盛り上がるファンファーレ風"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "scene_001",
+      "background": "classroom",
+      "bgm": "cheerful",
+      "lines": [
+        { "type": "narration", "text": "放課後の教室。掃除当番をなぜかさぼった三人が、机を囲んでいた。" },
+        { "type": "dialogue", "character": "miku", "position": "left", "expression": "happy", "text": "ねえねえ聞いて！ 昨日すっごいもの拾ったんだけど！" },
+        { "type": "dialogue", "character": "aoi", "position": "right", "expression": "normal", "text": "え、何なに？" },
+        { "type": "dialogue", "character": "miku", "position": "left", "expression": "happy", "text": "じゃーん！！" },
+        { "type": "narration", "text": "ミクが取り出したのは、どう見ても普通の石ころだった。" },
+        { "type": "dialogue", "character": "aoi", "position": "right", "expression": "angry", "text": "石じゃん。" },
+        { "type": "dialogue", "character": "miku", "position": "left", "expression": "confused", "text": "でも、なんか光った気がして！" },
+        { "type": "dialogue", "character": "aoi", "position": "right", "expression": "tired", "text": "光らないよ！！" },
+        {
+          "type": "choice",
+          "text": "そのときナナは……",
+          "options": [
+            { "label": "石をじっと見つめていた", "next": "scene_002a" },
+            { "label": "ぜんぜん関係ないことをしていた", "next": "scene_002b" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scene_002a",
+      "background": "classroom",
+      "bgm": "silly",
+      "lines": [
+        { "type": "narration", "text": "ナナはいつの間にか石を手に取り、目を細めてじっと見つめていた。" },
+        { "type": "dialogue", "character": "nana", "position": "right", "expression": "blank", "text": "……これ、おにぎりに似てる。" },
+        { "type": "dialogue", "character": "aoi", "position": "left", "expression": "surprised", "text": "似てないから！！" },
+        { "type": "dialogue", "character": "nana", "position": "right", "expression": "smile", "text": "鮭の。" },
+        { "type": "dialogue", "character": "aoi", "position": "left", "expression": "tired", "text": "具まで決めなくていいから。" },
+        { "type": "dialogue", "character": "miku", "position": "left", "expression": "happy", "text": "あ！ 言われてみたら確かに鮭！" },
+        { "type": "dialogue", "character": "aoi", "position": "right", "expression": "tired", "text": "ふたりしてなんで乗っかってんの。" },
+        { "type": "scene_end", "next": "scene_003" }
+      ]
+    },
+    {
+      "id": "scene_002b",
+      "background": "classroom",
+      "bgm": "silly",
+      "lines": [
+        { "type": "narration", "text": "ナナはいつの間にか自分の机で、なぜか折り紙を折り始めていた。" },
+        { "type": "dialogue", "character": "aoi", "position": "left", "expression": "surprised", "text": "ちょっとナナ、何してんの！？" },
+        { "type": "dialogue", "character": "nana", "position": "right", "expression": "smile", "text": "カブトムシ。" },
+        { "type": "dialogue", "character": "miku", "position": "left", "expression": "happy", "text": "え、折れるの！？ すごい！！" },
+        { "type": "dialogue", "character": "aoi", "position": "right", "expression": "tired", "text": "そこ感動するとこじゃない！" },
+        { "type": "dialogue", "character": "nana", "position": "right", "expression": "blank", "text": "ミクちゃんにあげる。石と交換で。" },
+        { "type": "dialogue", "character": "miku", "position": "left", "expression": "happy", "text": "やった！ 交渉成立！" },
+        { "type": "dialogue", "character": "aoi", "position": "right", "expression": "tired", "text": "どっちも価値ゼロじゃん……。" },
+        { "type": "scene_end", "next": "scene_003" }
+      ]
+    },
+    {
+      "id": "scene_003",
+      "background": "clubroom",
+      "bgm": "cheerful",
+      "lines": [
+        { "type": "narration", "text": "なんだかんだで三人は部室に流れ込み、また石の話に戻っていた。" },
+        { "type": "dialogue", "character": "miku", "position": "left", "expression": "happy", "text": "やっぱり光ったって！ スマホで撮ったもん！" },
+        { "type": "dialogue", "character": "aoi", "position": "right", "expression": "normal", "text": "……見せて。" },
+        { "type": "narration", "text": "アオイがスマホの画面を見た。確かに、なにか光っているように見えなくもない写真だった。" },
+        { "type": "dialogue", "character": "aoi", "position": "right", "expression": "tired", "text": "フラッシュの反射じゃん。" },
+        { "type": "dialogue", "character": "nana", "position": "left", "expression": "blank", "text": "パワーストーンかもしれない。" },
+        { "type": "dialogue", "character": "miku", "position": "left", "expression": "happy", "text": "そうそう！ 帰りにパワーストーンショップ行こう！" },
+        { "type": "dialogue", "character": "aoi", "position": "right", "expression": "tired", "text": "行かないよ。…行かないよ？" },
+        { "type": "scene_end", "next": "scene_004" }
+      ]
+    },
+    {
+      "id": "scene_004",
+      "background": "shop",
+      "bgm": "triumphant",
+      "lines": [
+        { "type": "narration", "text": "三十分後、三人はパワーストーンショップにいた。" },
+        { "type": "dialogue", "character": "aoi", "position": "right", "expression": "tired", "text": "なんで来てんの私。" },
+        { "type": "narration", "text": "店員さんが石を見て、少し考えた。" },
+        { "type": "dialogue", "character": "miku", "position": "left", "expression": "happy", "text": "これ、なんですか！？ すごい石なんですよね！？" },
+        { "type": "narration", "text": "店員さんはにっこり笑った。" },
+        { "type": "dialogue", "character": "nana", "position": "right", "expression": "blank", "text": "……普通の石です、と言われた。" },
+        { "type": "dialogue", "character": "aoi", "position": "left", "expression": "angry", "text": "だから言ったじゃん！！！" },
+        { "type": "dialogue", "character": "miku", "position": "left", "expression": "confused", "text": "でも！ なんか光ったもん！" },
+        { "type": "dialogue", "character": "nana", "position": "right", "expression": "smile", "text": "鮭おにぎり石。でも、大事にしよ。" },
+        { "type": "dialogue", "character": "miku", "position": "left", "expression": "happy", "text": "うん！「サーモン」って名前つけた！" },
+        { "type": "dialogue", "character": "aoi", "position": "right", "expression": "tired", "text": "……まあ、楽しかったからいっか。" },
+        { "type": "narration", "text": "今日も放課後は、カオスだった。" },
+        { "type": "scene_end", "next": null }
+      ]
+    }
+  ]
+}

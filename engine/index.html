@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sound Novel Engine v0.1</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+      color: #fff;
+    }
+
+    /* ─── ラッパー：cqw の基点 ────────────────────────────────
+       container-type: inline-size を設定すると子孫で
+       1cqw = ラッパー幅の 1% として使える。
+       デフォルト幅は「vw と vh×(800/480) の小さい方」で
+       16:9 を保ちながらビューポートに収める。
+    ─────────────────────────────────────────────────────────── */
+    #game-wrapper {
+      container-type: inline-size;
+      container-name: game;
+      width: min(100vw, calc(100vh * 800 / 480));
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ─── ゲーム画面
+       幅 100%（= wrapper）、高さは aspect-ratio で自動
+       内部の全サイズは cqw（コンテナ幅 %）で指定
+    ─── */
+    #game {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 800 / 480;
+      overflow: hidden;
+      cursor: pointer;
+      border-radius: 0.5cqw;
+      box-shadow: 0 0 7.5cqw rgba(0,0,0,0.8);
+      user-select: none;
+    }
+
+    /* 背景 */
+    #background {
+      position: absolute;
+      inset: 0;
+      transition: background 0.8s ease;
+      background: #111;
+    }
+    #bg-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.5) 100%);
+      pointer-events: none;
+    }
+
+    /* ─── 立ち絵 ─── */
+    .sprite {
+      position: absolute;
+      bottom: 14.75cqw;     /* 118px ÷ 800 × 100 */
+      width:  22.5cqw;      /* 180px */
+      height: 33.75cqw;     /* 270px */
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    #sprite-left  { left:  7.5cqw; }   /* 60px */
+    #sprite-right { right: 7.5cqw; }
+    .sprite.hidden { opacity: 0; transform: translateY(1.25cqw); pointer-events: none; }
+
+    .sprite-body {
+      width: 100%;
+      height: 100%;
+      border-radius: 1cqw 1cqw 0 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1cqw;
+      font-size: 1.625cqw;
+      font-weight: bold;
+    }
+    .sprite-body svg { opacity: 0.85; }
+    .sprite-name { letter-spacing: 0.08em; }
+    .sprite-expression { font-size: 1.25cqw; opacity: 0.6; font-weight: normal; }
+
+    .sprite.inactive { opacity: 0.45; }
+
+    /* ─── テキストボックス ─── */
+    #textbox {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 16cqw;                      /* 128px */
+      background: rgba(5, 5, 20, 0.88);
+      backdrop-filter: blur(0.5cqw);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 1.75cqw 3.5cqw 1.25cqw;   /* 14px 28px 10px */
+    }
+
+    #char-name-wrap {
+      min-height: 2.75cqw;    /* 22px */
+      margin-bottom: 0.75cqw;
+    }
+    #char-name {
+      display: inline-block;
+      font-size: 1.6875cqw;   /* 13.5px */
+      font-weight: bold;
+      color: #a8d8ff;
+      background: rgba(92, 107, 192, 0.25);
+      padding: 0.125cqw 1.5cqw;
+      border-radius: 0.375cqw;
+      border-left: 0.375cqw solid #5c6bc0;
+      letter-spacing: 0.05em;
+    }
+    #char-name.hidden { display: none; }
+
+    #text-content {
+      font-size: 1.875cqw;    /* 15px */
+      line-height: 1.8;
+      color: #efefef;
+      min-height: 6.5cqw;
+    }
+    #text-content.narration {
+      color: #d0d8e8;
+      font-size: 1.8125cqw;   /* 14.5px */
+    }
+
+    #click-indicator {
+      position: absolute;
+      bottom: 1.5cqw; right: 2.75cqw;
+      font-size: 2cqw;
+      color: #5c6bc0;
+      opacity: 0;
+      transition: opacity 0.3s;
+      animation: blink 1.2s infinite;
+    }
+    #click-indicator.visible { opacity: 1; }
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.15; }
+    }
+
+    /* ─── 選択肢 ─── */
+    #choices {
+      position: absolute;
+      bottom: 18.5cqw;        /* 148px */
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      flex-direction: column;
+      gap: 1.25cqw;
+      min-width: 40cqw;       /* 320px */
+    }
+    #choices.visible { display: flex; }
+    #choice-prompt {
+      text-align: center;
+      font-size: 1.625cqw;
+      color: #aaa;
+      margin-bottom: 0.5cqw;
+    }
+
+    .choice-btn {
+      background: rgba(10, 10, 30, 0.92);
+      border: 0.1875cqw solid rgba(92, 107, 192, 0.7);
+      color: #e8eaff;
+      padding: 1.375cqw 3.5cqw;
+      font-size: 1.75cqw;
+      font-family: inherit;
+      border-radius: 3.75cqw;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      text-align: center;
+    }
+    .choice-btn:hover {
+      background: rgba(92, 107, 192, 0.5);
+      border-color: #9fa8da;
+      transform: scale(1.02);
+    }
+
+    /* ─── オーバーレイ ─── */
+    #overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(5, 5, 20, 0.93);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2.25cqw;
+    }
+    #overlay.hidden { display: none; }
+
+    #overlay-title {
+      font-size: 2.75cqw;
+      letter-spacing: 0.05em;
+      color: #e8eaff;
+    }
+    #overlay-sub {
+      font-size: 1.5cqw;
+      color: #5c6bc0;
+      letter-spacing: 0.1em;
+    }
+    #overlay-message {
+      font-size: 1.625cqw;
+      color: #778;
+      margin-bottom: 0.5cqw;
+    }
+
+    #story-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25cqw;
+      width: 52.5cqw;         /* 420px */
+    }
+    .story-btn {
+      background: transparent;
+      border: 0.125cqw solid rgba(92,107,192,0.5);
+      color: #cdd;
+      padding: 1.5cqw 2.5cqw;
+      font-family: inherit;
+      font-size: 1.75cqw;
+      border-radius: 1cqw;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s, border-color 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.375cqw;
+    }
+    .story-btn:hover {
+      background: rgba(92,107,192,0.2);
+      border-color: #9fa8da;
+    }
+    .story-btn .s-genre {
+      font-size: 1.375cqw;
+      color: #5c6bc0;
+    }
+
+    /* ─── DEV バー（wrapper 幅に自動追従） ─── */
+    #devbar {
+      width: 100%;
+      padding: 4px 3px;
+      display: flex;
+      gap: 14px;
+      font-size: 11px;
+      color: #3a3a5a;
+      font-family: monospace;
+      flex-shrink: 0;
+    }
+    #devbar span { transition: color 0.3s; }
+    #devbar span.active { color: #5c6bc0; }
+  </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+
+  <div id="game">
+    <div id="background"></div>
+    <div id="bg-overlay"></div>
+
+    <div id="sprite-left"  class="sprite hidden">
+      <div class="sprite-body" id="sprite-left-body"></div>
+    </div>
+    <div id="sprite-right" class="sprite hidden">
+      <div class="sprite-body" id="sprite-right-body"></div>
+    </div>
+
+    <div id="textbox">
+      <div id="char-name-wrap">
+        <span id="char-name" class="hidden"></span>
+      </div>
+      <div id="text-content"></div>
+      <div id="click-indicator">▼</div>
+    </div>
+
+    <div id="choices">
+      <div id="choice-prompt"></div>
+    </div>
+
+    <div id="overlay">
+      <div id="overlay-title">Sound Novel Engine</div>
+      <div id="overlay-sub">prototype v0.1</div>
+      <div id="overlay-message">ストーリーを選んでください</div>
+      <div id="story-list"></div>
+    </div>
+  </div><!-- /#game -->
+
+  <div id="devbar">
+    <span id="dev-story">story: —</span>
+    <span id="dev-scene">scene: —</span>
+    <span id="dev-line">line: —</span>
+    <span id="dev-bgm">bgm: —</span>
+    <span id="dev-viewport" style="margin-left:auto">1:PC 2:Tablet 3:Mobile横 4:Mobile縦 5:Fluid</span>
+  </div>
+
+</div><!-- /#game-wrapper -->
+
+<script src="stories.js"></script>
+<script src="audio.js"></script>
+<script src="renderer.js"></script>
+<script src="engine.js"></script>
+<script>
+// ── デバイスプレビュー（数字キー 1〜5）──
+// wrapper の width を変えるだけ。
+// aspect-ratio と cqw が内部すべてを自動追従する。
+(function () {
+  const wrapper = document.getElementById('game-wrapper');
+  const vpSpan  = document.getElementById('dev-viewport');
+
+  const VIEWPORTS = [
+    { key: '1', label: 'PC       default',  w: null    }, // CSS の min() に任せる
+    { key: '2', label: 'Tablet    600px',   w: '600px' },
+    { key: '3', label: 'Mobile横  480px',   w: '480px' },
+    { key: '4', label: 'Mobile縦  360px',   w: '360px' },
+    { key: '5', label: 'Fluid    100vw',    w: '100vw' },
+  ];
+
+  function setViewport(vp) {
+    if (vp.w) {
+      wrapper.style.width = vp.w;
+    } else {
+      wrapper.style.removeProperty('width');
+    }
+    vpSpan.textContent = `[${vp.key}] ${vp.label}`;
+    vpSpan.classList.add('active');
+    showToast(`[${vp.key}] ${vp.label}`);
+  }
+
+  function showToast(msg) {
+    let t = document.getElementById('vp-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'vp-toast';
+      Object.assign(t.style, {
+        position: 'fixed', top: '16px', right: '16px',
+        background: 'rgba(92,107,192,0.92)', color: '#fff',
+        padding: '6px 16px', borderRadius: '20px',
+        fontSize: '12px', fontFamily: 'monospace',
+        pointerEvents: 'none', transition: 'opacity 0.4s',
+        zIndex: '9999', opacity: '0',
+      });
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    const vp = VIEWPORTS.find(v => v.key === e.key);
+    if (vp) setViewport(vp);
+  });
+})();
+</script>
+</body>
+</html>

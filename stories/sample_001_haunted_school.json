@@ -1,0 +1,120 @@
+{
+  "meta": {
+    "id": "sample_001",
+    "title": "廃校の約束",
+    "genre": "ホラー・感動",
+    "author": "サンプル",
+    "created_at": "2026-04-27T00:00:00Z",
+    "assets": {
+      "characters": {
+        "haruka": { "name": "ハルカ", "sprite": "haruka.png" },
+        "yui":    { "name": "ユイ",   "sprite": "yui.png" }
+      },
+      "backgrounds": {
+        "classroom": "bg_classroom.jpg",
+        "rooftop":   "bg_rooftop.jpg"
+      },
+      "bgm": {
+        "eerie":     "bgm_eerie.mp3",
+        "emotional": "bgm_emotional.mp3",
+        "hopeful":   "bgm_hopeful.mp3"
+      }
+    },
+    "assets_needed": [
+      "haruka.png — 制服の中学生女子（表情: normal / surprised / sad / smile）",
+      "yui.png — 半透明の少女・幽霊（表情: sad / smile）",
+      "bg_classroom.jpg — 薄暗い廃墟の教室",
+      "bg_rooftop.jpg — 夕暮れの屋上",
+      "bgm_eerie.mp3 — 静かで不気味なアンビエント",
+      "bgm_emotional.mp3 — 切ないピアノ曲",
+      "bgm_hopeful.mp3 — 穏やかで希望のあるBGM"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "scene_001",
+      "background": "classroom",
+      "bgm": "eerie",
+      "lines": [
+        { "type": "narration", "text": "廃校になって三年。この建物に近づく生徒はほとんどいない。" },
+        { "type": "narration", "text": "ハルカは何かに引き寄せられるように、壊れかけた扉を押し開けた。" },
+        { "type": "dialogue", "character": "haruka", "position": "left", "expression": "normal", "text": "…なんで私、ここに来ちゃったんだろう。" },
+        { "type": "narration", "text": "埃の積もった黒板。倒れたままの椅子。そして窓際に――" },
+        { "type": "narration", "text": "女の子が、座っていた。" },
+        { "type": "scene_end", "next": "scene_002" }
+      ]
+    },
+    {
+      "id": "scene_002",
+      "background": "classroom",
+      "bgm": "eerie",
+      "lines": [
+        { "type": "dialogue", "character": "yui", "position": "right", "expression": "sad", "text": "……来てくれたんだ。" },
+        { "type": "dialogue", "character": "haruka", "position": "left", "expression": "surprised", "text": "え…っ！？　誰！？" },
+        { "type": "dialogue", "character": "yui", "position": "right", "expression": "sad", "text": "怖がらないで。ただ……話したかっただけ。" },
+        {
+          "type": "choice",
+          "text": "どうする？",
+          "options": [
+            { "label": "話しかけてみる", "next": "scene_003a" },
+            { "label": "逃げようとする", "next": "scene_003b" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scene_003a",
+      "background": "classroom",
+      "bgm": "eerie",
+      "lines": [
+        { "type": "dialogue", "character": "haruka", "position": "left", "expression": "normal", "text": "…あなた、誰？ここで何してるの？" },
+        { "type": "dialogue", "character": "yui", "position": "right", "expression": "sad", "text": "私の名前はユイ。昔、この学校に通ってた。" },
+        { "type": "dialogue", "character": "haruka", "position": "left", "expression": "surprised", "text": "昔って…この学校、もう三年前に廃校に――" },
+        { "type": "dialogue", "character": "yui", "position": "right", "expression": "sad", "text": "うん。知ってる。" },
+        { "type": "narration", "text": "その言葉の意味を、ハルカはゆっくりと理解した。" },
+        { "type": "dialogue", "character": "yui", "position": "right", "expression": "sad", "text": "屋上に、行ってもらえる？　話したいことがあるの。" },
+        { "type": "scene_end", "next": "scene_004" }
+      ]
+    },
+    {
+      "id": "scene_003b",
+      "background": "classroom",
+      "bgm": "eerie",
+      "lines": [
+        { "type": "narration", "text": "逃げようとした瞬間、足がすくんで動けなくなった。" },
+        { "type": "dialogue", "character": "yui", "position": "right", "expression": "sad", "text": "ごめんね、驚かせて。でも……お願い、聞いてほしいことがあるの。" },
+        { "type": "narration", "text": "その声はあまりにも悲しそうで、ハルカは思わず振り返った。" },
+        { "type": "dialogue", "character": "haruka", "position": "left", "expression": "normal", "text": "…わかった。聞く。" },
+        { "type": "dialogue", "character": "yui", "position": "right", "expression": "sad", "text": "屋上に来てくれる？　そこで話すね。" },
+        { "type": "scene_end", "next": "scene_004" }
+      ]
+    },
+    {
+      "id": "scene_004",
+      "background": "rooftop",
+      "bgm": "emotional",
+      "lines": [
+        { "type": "narration", "text": "屋上は夕焼けに染まっていた。風がユイの髪を揺らす――透けて見える、その髪を。" },
+        { "type": "dialogue", "character": "yui", "position": "right", "expression": "sad", "text": "私、ここで転んで怪我をして、そのまま…だったの。誰にも気づかれないまま。" },
+        { "type": "dialogue", "character": "haruka", "position": "left", "expression": "sad", "text": "そんな…。" },
+        { "type": "dialogue", "character": "yui", "position": "right", "expression": "sad", "text": "ずっとここにいたの。誰かに、ちゃんと「さよなら」が言いたくて。" },
+        { "type": "dialogue", "character": "haruka", "position": "left", "expression": "normal", "text": "……私が聞くよ。ユイの「さよなら」。" },
+        { "type": "dialogue", "character": "yui", "position": "right", "expression": "smile", "text": "ありがとう。ここは…きれいな学校だったよ。みんなのことが、大好きだった。" },
+        { "type": "scene_end", "next": "scene_005" }
+      ]
+    },
+    {
+      "id": "scene_005",
+      "background": "rooftop",
+      "bgm": "hopeful",
+      "lines": [
+        { "type": "narration", "text": "ユイの姿が、夕陽の光に溶けていくように薄くなっていった。" },
+        { "type": "dialogue", "character": "yui", "position": "right", "expression": "smile", "text": "会いに来てくれてよかった。もう、行けそう。" },
+        { "type": "dialogue", "character": "haruka", "position": "left", "expression": "smile", "text": "うん。行ってらっしゃい、ユイ。" },
+        { "type": "narration", "text": "空に、一羽の鳥が飛び立った。" },
+        { "type": "narration", "text": "ハルカはしばらくそこに立って、やがてゆっくりと歩き出した。胸の中に、ほんの少しあたたかいものを感じながら。" },
+        { "type": "scene_end", "next": null }
+      ]
+    }
+  ]
+}

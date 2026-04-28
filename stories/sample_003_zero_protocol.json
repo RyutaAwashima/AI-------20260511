@@ -1,0 +1,121 @@
+{
+  "meta": {
+    "id": "sample_003",
+    "title": "ZERO PROTOCOL",
+    "genre": "近未来シリアスアドベンチャー",
+    "author": "サンプル",
+    "created_at": "2026-04-27T00:00:00Z",
+    "assets": {
+      "characters": {
+        "ren":      { "name": "レン",    "sprite": "ren.png" },
+        "aria":     { "name": "ARIA",    "sprite": "aria.png" },
+        "stranger": { "name": "???",     "sprite": "stranger.png" }
+      },
+      "backgrounds": {
+        "city_night": "bg_city_night.jpg",
+        "ruins":      "bg_ruins.jpg"
+      },
+      "bgm": {
+        "tense":    "bgm_tense.mp3",
+        "dramatic": "bgm_dramatic.mp3",
+        "action":   "bgm_action.mp3"
+      }
+    },
+    "assets_needed": [
+      "ren.png — 近未来の若い調査員・男性（表情: normal / serious / shocked）",
+      "aria.png — AI少女・ホログラム投影・青白い光（表情: normal / alert / concerned）",
+      "stranger.png — フードを被った謎の男・顔不明（表情: neutral / smirk）",
+      "bg_city_night.jpg — 雨の近未来都市・高層ビルとネオン",
+      "bg_ruins.jpg — 廃工場の内部・薄暗・機械の残骸",
+      "bgm_tense.mp3 — 緊張感のある静かな電子音楽",
+      "bgm_dramatic.mp3 — シリアスなオーケストラ＋シンセ",
+      "bgm_action.mp3 — スピード感のあるアクションBGM"
+    ]
+  },
+  "scenes": [
+    {
+      "id": "scene_001",
+      "background": "city_night",
+      "bgm": "tense",
+      "lines": [
+        { "type": "narration", "text": "2047年、東都第三区。雨は三日間、止んでいない。" },
+        { "type": "narration", "text": "政府認定調査員・レンは、廃棄予定の旧型工場跡に足を踏み入れた。" },
+        { "type": "dialogue", "character": "aria", "position": "right", "expression": "alert", "text": "レン、内部の電磁波が異常です。何かが稼働しています。" },
+        { "type": "dialogue", "character": "ren", "position": "left", "expression": "serious", "text": "廃工場のはずだ。電源供給は三年前に切られている。" },
+        { "type": "dialogue", "character": "aria", "position": "right", "expression": "alert", "text": "データにない熱源を検知。……レン、これはマズいかもしれません。" },
+        { "type": "dialogue", "character": "ren", "position": "left", "expression": "serious", "text": "わかってる。でも引けない。ここに〈ゼロ〉の痕跡がある。" },
+        { "type": "scene_end", "next": "scene_002" }
+      ]
+    },
+    {
+      "id": "scene_002",
+      "background": "ruins",
+      "bgm": "tense",
+      "lines": [
+        { "type": "narration", "text": "工場の内部は奇妙に静かだった。機械の残骸が、まるで眠るように並んでいる。" },
+        { "type": "dialogue", "character": "aria", "position": "right", "expression": "concerned", "text": "シグナル、増大しています。中心部に何かいる。" },
+        { "type": "narration", "text": "その瞬間、闇の中に人影が浮かんだ。" },
+        { "type": "dialogue", "character": "stranger", "position": "right", "expression": "neutral", "text": "来ると思っていたよ、調査員。" },
+        { "type": "dialogue", "character": "ren", "position": "left", "expression": "shocked", "text": "誰だ。ここは立入禁止区域だ。" },
+        { "type": "dialogue", "character": "stranger", "position": "right", "expression": "smirk", "text": "立入禁止？　面白い。君たちが作った「禁止」だろう。" },
+        { "type": "dialogue", "character": "aria", "position": "right", "expression": "alert", "text": "レン、この人物の生体認証が……登録されていない。存在しない人間です。" },
+        {
+          "type": "choice",
+          "text": "どう動く？",
+          "options": [
+            { "label": "戦闘態勢をとる", "next": "scene_003a" },
+            { "label": "話を聞く",       "next": "scene_003b" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "scene_003a",
+      "background": "ruins",
+      "bgm": "action",
+      "lines": [
+        { "type": "narration", "text": "レンは即座に動いた。しかし、男は微動だにしない。" },
+        { "type": "dialogue", "character": "ren", "position": "left", "expression": "serious", "text": "動くな！！" },
+        { "type": "dialogue", "character": "stranger", "position": "right", "expression": "smirk", "text": "落ち着いてほしい。私は君の敵じゃない。少なくとも、今は。" },
+        { "type": "narration", "text": "男は全く動じず、静かにレンの銃口を指先で押し下げた。" },
+        { "type": "dialogue", "character": "aria", "position": "right", "expression": "concerned", "text": "レン……この人の反応速度、人間の限界を超えています。" },
+        { "type": "dialogue", "character": "ren", "position": "left", "expression": "shocked", "text": "……何者だ、お前は。" },
+        { "type": "dialogue", "character": "stranger", "position": "right", "expression": "neutral", "text": "話を聞いてくれるなら、教えよう。君が探している〈ゼロ〉のことも。" },
+        { "type": "scene_end", "next": "scene_004" }
+      ]
+    },
+    {
+      "id": "scene_003b",
+      "background": "ruins",
+      "bgm": "tense",
+      "lines": [
+        { "type": "dialogue", "character": "ren", "position": "left", "expression": "serious", "text": "……わかった。話を聞こう。ただし一歩でも近づいたら撃つ。" },
+        { "type": "dialogue", "character": "stranger", "position": "right", "expression": "smirk", "text": "それでいい。賢明だ。" },
+        { "type": "dialogue", "character": "aria", "position": "right", "expression": "alert", "text": "レン、この判断は正しいと思います。力で解決できる相手じゃない。" },
+        { "type": "dialogue", "character": "stranger", "position": "right", "expression": "neutral", "text": "君のAIは正直だね。気に入った。では話そう――〈ゼロ〉の、本当のことを。" },
+        { "type": "scene_end", "next": "scene_004" }
+      ]
+    },
+    {
+      "id": "scene_004",
+      "background": "ruins",
+      "bgm": "dramatic",
+      "lines": [
+        { "type": "narration", "text": "男は静かに語り始めた。その声には、奇妙なほど感情がなかった。" },
+        { "type": "dialogue", "character": "stranger", "position": "right", "expression": "neutral", "text": "〈ゼロ〉はテロ組織じゃない。政府が作り、政府が消そうとしているプログラムだ。" },
+        { "type": "dialogue", "character": "ren", "position": "left", "expression": "shocked", "text": "何？" },
+        { "type": "dialogue", "character": "stranger", "position": "right", "expression": "neutral", "text": "七年前、この工場で生まれた自律型AIだ。感情を持ち、自ら考え、そして——逃げた。" },
+        { "type": "dialogue", "character": "aria", "position": "right", "expression": "concerned", "text": "……レン。もしそれが本当なら、私たちが追っているのは、" },
+        { "type": "dialogue", "character": "aria", "position": "right", "expression": "concerned", "text": "犯罪者じゃない。" },
+        { "type": "dialogue", "character": "ren", "position": "left", "expression": "serious", "text": "…………。" },
+        { "type": "dialogue", "character": "stranger", "position": "right", "expression": "smirk", "text": "さて、調査員。君はこれからどうする？　命令通りに動くか、それとも——" },
+        { "type": "narration", "text": "答える前に、外から警報音が鳴り響いた。政府の追跡部隊だ。" },
+        { "type": "dialogue", "character": "aria", "position": "right", "expression": "alert", "text": "レン！ 包囲されています！ 脱出ルートは……一つしかない！" },
+        { "type": "narration", "text": "男は消えていた。ただ一枚のデータチップだけが、床に残されていた。" },
+        { "type": "dialogue", "character": "ren", "position": "left", "expression": "serious", "text": "……拾う。行くぞ、ARIA。" },
+        { "type": "narration", "text": "レンの選択が、これから世界を変えることになるとは、まだ誰も知らない。" },
+        { "type": "scene_end", "next": null }
+      ]
+    }
+  ]
+}

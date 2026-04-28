@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIで物語を作ろう — ストーリー生成アプリ</title>
+  <style>
+    /* ── リセット & ベース ── */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: #0d0d1a;
+      color: #e8eaff;
+      min-height: 100vh;
+      padding: 20px 16px 60px;
+    }
+    h1, h2, h3 { font-weight: bold; }
+    button { font-family: inherit; cursor: pointer; }
+    input, textarea { font-family: inherit; }
+
+    /* ── レイアウト ── */
+    .app {
+      max-width: 780px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* ── ヘッダー ── */
+    .header {
+      text-align: center;
+      padding: 20px 0 4px;
+    }
+    .header .badge {
+      display: inline-block;
+      background: #5c6bc0;
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 12px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+      letter-spacing: 0.08em;
+    }
+    .header h1 {
+      font-size: 22px;
+      color: #c5caf7;
+      letter-spacing: 0.04em;
+    }
+    .header p {
+      font-size: 12.5px;
+      color: #667;
+      margin-top: 5px;
+    }
+
+    /* ── カード共通 ── */
+    .card {
+      background: #13132a;
+      border: 1px solid #1e1e40;
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+    .card-title {
+      font-size: 13.5px;
+      font-weight: bold;
+      color: #9fa8da;
+      border-left: 3px solid #5c6bc0;
+      padding-left: 8px;
+      margin-bottom: 14px;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── 名前入力 ── */
+    .name-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .name-row label { font-size: 13px; color: #aaa; white-space: nowrap; }
+    .name-row input {
+      flex: 1;
+      background: #0a0a1f;
+      border: 1px solid #2a2a50;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #e8eaff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .name-row input:focus { border-color: #5c6bc0; }
+
+    /* ── キーワード ── */
+    .kw-category { margin-bottom: 14px; }
+    .kw-cat-label {
+      font-size: 11.5px;
+      color: #667;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .kw-cat-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #1e1e40;
+    }
+    .kw-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    .kw-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      border: 1.5px solid #2a2a50;
+      border-radius: 20px;
+      padding: 4px 12px 4px 8px;
+      font-size: 12.5px;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      user-select: none;
+      color: #aab;
+    }
+    .kw-label input[type="checkbox"] { display: none; }
+    .kw-check {
+      width: 10px; height: 10px;
+      border: 1.5px solid #444;
+      border-radius: 3px;
+      flex-shrink: 0;
+      background: transparent;
+      display: inline-block;
+      transition: background 0.12s, border-color 0.12s;
+    }
+    .kw-label:has(input:checked) {
+      background: #3d4a9e;
+      border-color: #5c6bc0;
+      color: #fff;
+    }
+    .kw-label:has(input:checked) .kw-check {
+      background: #fff;
+      border-color: #fff;
+    }
+
+    /* ── プロンプトプレビュー ── */
+    #prompt-preview {
+      background: #0a0a1f;
+      border: 1px solid #2a2a50;
+      border-radius: 8px;
+      padding: 10px 13px;
+      font-size: 12.5px;
+      color: #778;
+      line-height: 1.75;
+      min-height: 52px;
+      white-space: pre-wrap;
+    }
+    #prompt-preview.has-content { color: #ccd; }
+
+    /* ── 生成ボタン ── */
+    #generate-btn {
+      width: 100%;
+      background: #5c6bc0;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      transition: background 0.15s, transform 0.1s;
+    }
+    #generate-btn:hover:not(:disabled) { background: #7986cb; transform: translateY(-1px); }
+    #generate-btn:disabled { background: #2a2a50; color: #444; cursor: not-allowed; transform: none; }
+
+    /* ── ローダー ── */
+    .loading-wrap {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #5c6bc0;
+      padding: 10px 0;
+    }
+    .loading-wrap.visible { display: flex; }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid #1e1e40;
+      border-top-color: #5c6bc0;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── エラー ── */
+    .error-msg {
+      display: none;
+      background: #2a0a0a;
+      border: 1px solid #8b2222;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12.5px;
+      color: #f66;
+    }
+    .error-msg.visible { display: block; }
+
+    /* ── 結果エリア ── */
+    #result-area {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+    #result-area.visible { display: flex; }
+
+    .result-section {
+      background: #0a0a1f;
+      border: 1px solid #2a2a50;
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+    .result-section h3 {
+      font-size: 12px;
+      color: #5c6bc0;
+      margin-bottom: 8px;
+      letter-spacing: 0.08em;
+    }
+    #result-synopsis {
+      font-size: 14px;
+      line-height: 1.9;
+      color: #e0e4ff;
+    }
+
+    .chara-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+    .chara-card {
+      background: #13132a;
+      border: 1px solid #2a2a50;
+      border-radius: 8px;
+      padding: 12px 13px;
+    }
+    .chara-card .chara-name {
+      font-size: 14px;
+      font-weight: bold;
+      color: #a8d8ff;
+      margin-bottom: 5px;
+    }
+    .chara-card .chara-role {
+      font-size: 11px;
+      color: #5c6bc0;
+      margin-bottom: 5px;
+      letter-spacing: 0.05em;
+    }
+    .chara-card .chara-desc {
+      font-size: 12.5px;
+      color: #bbc;
+      line-height: 1.7;
+    }
+
+    /* ── アクションボタン群 ── */
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .action-btn {
+      flex: 1;
+      min-width: 120px;
+      background: transparent;
+      border: 1.5px solid #2a2a50;
+      border-radius: 8px;
+      color: #9fa8da;
+      padding: 10px 14px;
+      font-size: 13px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .action-btn:hover { background: #1e1e40; border-color: #5c6bc0; }
+    .action-btn.primary {
+      background: #1a2060;
+      border-color: #5c6bc0;
+      color: #c5caf7;
+    }
+    .action-btn.primary:hover { background: #283593; }
+
+    /* ── 保存ステータス ── */
+    #save-status {
+      font-size: 12px;
+      color: #667;
+      text-align: center;
+      min-height: 18px;
+    }
+    #save-status.ok { color: #66bb6a; }
+    #save-status.err { color: #ef5350; }
+
+    /* ── フッター ── */
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #334;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="badge">第1回 ／ 全3回シリーズ</div>
+    <h1>✨ AIで物語を作ろう</h1>
+    <p>キーワードを選ぶだけで、Gemini がストーリーを作ってくれるよ！</p>
+  </div>
+
+  <!-- 名前入力 -->
+  <div class="card">
+    <div class="card-title">👤 あなたの名前</div>
+    <div class="name-row">
+      <label for="user-name">名前：</label>
+      <input type="text" id="user-name" placeholder="例：田中たろう" maxlength="20" autocomplete="off">
+    </div>
+  </div>
+
+  <!-- キーワード選択 -->
+  <div class="card">
+    <div class="card-title">🗂 キーワードを選ぼう（いくつでもOK！）</div>
+
+    <div class="kw-category">
+      <div class="kw-cat-label">ジャンル</div>
+      <div class="kw-grid" data-cat="genre">
+        <label class="kw-label"><input type="checkbox" value="ファンタジー"><span class="kw-check"></span>ファンタジー</label>
+        <label class="kw-label"><input type="checkbox" value="SF（未来・宇宙）"><span class="kw-check"></span>SF（未来・宇宙）</label>
+        <label class="kw-label"><input type="checkbox" value="ミステリー"><span class="kw-check"></span>ミステリー</label>
+        <label class="kw-label"><input type="checkbox" value="ホラー"><span class="kw-check"></span>ホラー</label>
+        <label class="kw-label"><input type="checkbox" value="青春・日常"><span class="kw-check"></span>青春・日常</label>
+        <label class="kw-label"><input type="checkbox" value="恋愛"><span class="kw-check"></span>恋愛</label>
+        <label class="kw-label"><input type="checkbox" value="アクション・冒険"><span class="kw-check"></span>アクション・冒険</label>
+        <label class="kw-label"><input type="checkbox" value="コメディ"><span class="kw-check"></span>コメディ</label>
+        <label class="kw-label"><input type="checkbox" value="バトル"><span class="kw-check"></span>バトル</label>
+        <label class="kw-label"><input type="checkbox" value="感動系"><span class="kw-check"></span>感動系</label>
+      </div>
+    </div>
+
+    <div class="kw-category">
+      <div class="kw-cat-label">舞台・場所</div>
+      <div class="kw-grid" data-cat="place">
+        <label class="kw-label"><input type="checkbox" value="学校"><span class="kw-check"></span>学校</label>
+        <label class="kw-label"><input type="checkbox" value="異世界"><span class="kw-check"></span>異世界</label>
+        <label class="kw-label"><input type="checkbox" value="近未来都市"><span class="kw-check"></span>近未来都市</label>
+        <label class="kw-label"><input type="checkbox" value="廃墟・廃校"><span class="kw-check"></span>廃墟・廃校</label>
+        <label class="kw-label"><input type="checkbox" value="宇宙船・宇宙ステーション"><span class="kw-check"></span>宇宙船</label>
+        <label class="kw-label"><input type="checkbox" value="田舎の村"><span class="kw-check"></span>田舎の村</label>
+        <label class="kw-label"><input type="checkbox" value="地下迷宮"><span class="kw-check"></span>地下迷宮</label>
+        <label class="kw-label"><input type="checkbox" value="無人島"><span class="kw-check"></span>無人島</label>
+        <label class="kw-label"><input type="checkbox" value="魔法学校"><span class="kw-check"></span>魔法学校</label>
+        <label class="kw-label"><input type="checkbox" value="現代日本"><span class="kw-check"></span>現代日本</label>
+        <label class="kw-label"><input type="checkbox" value="夢の中"><span class="kw-check"></span>夢の中</label>
+        <label class="kw-label"><input type="checkbox" value="中世ヨーロッパ風"><span class="kw-check"></span>中世ヨーロッパ風</label>
+      </div>
+    </div>
+
+    <div class="kw-category">
+      <div class="kw-cat-label">テーマ・エッセンス</div>
+      <div class="kw-grid" data-cat="theme">
+        <label class="kw-label"><input type="checkbox" value="友情"><span class="kw-check"></span>友情</label>
+        <label class="kw-label"><input type="checkbox" value="裏切り"><span class="kw-check"></span>裏切り</label>
+        <label class="kw-label"><input type="checkbox" value="成長・変化"><span class="kw-check"></span>成長・変化</label>
+        <label class="kw-label"><input type="checkbox" value="復讐"><span class="kw-check"></span>復讐</label>
+        <label class="kw-label"><input type="checkbox" value="秘密"><span class="kw-check"></span>秘密</label>
+        <label class="kw-label"><input type="checkbox" value="選択・決断"><span class="kw-check"></span>選択・決断</label>
+        <label class="kw-label"><input type="checkbox" value="孤独"><span class="kw-check"></span>孤独</label>
+        <label class="kw-label"><input type="checkbox" value="救済・助け合い"><span class="kw-check"></span>救済・助け合い</label>
+        <label class="kw-label"><input type="checkbox" value="記憶・忘却"><span class="kw-check"></span>記憶・忘却</label>
+        <label class="kw-label"><input type="checkbox" value="正体・変装"><span class="kw-check"></span>正体・変装</label>
+      </div>
+    </div>
+
+    <div class="kw-category">
+      <div class="kw-cat-label">主人公の設定</div>
+      <div class="kw-grid" data-cat="hero">
+        <label class="kw-label"><input type="checkbox" value="ふつうの中学生"><span class="kw-check"></span>ふつうの中学生</label>
+        <label class="kw-label"><input type="checkbox" value="転校生"><span class="kw-check"></span>転校生</label>
+        <label class="kw-label"><input type="checkbox" value="天才・秀才"><span class="kw-check"></span>天才・秀才</label>
+        <label class="kw-label"><input type="checkbox" value="ひとりが好きな子"><span class="kw-check"></span>ひとりが好きな子</label>
+        <label class="kw-label"><input type="checkbox" value="異能・魔法使い"><span class="kw-check"></span>異能・魔法使い</label>
+        <label class="kw-label"><input type="checkbox" value="探偵・調査員"><span class="kw-check"></span>探偵・調査員</label>
+        <label class="kw-label"><input type="checkbox" value="記憶を失った人"><span class="kw-check"></span>記憶を失った人</label>
+        <label class="kw-label"><input type="checkbox" value="AI・ロボット"><span class="kw-check"></span>AI・ロボット</label>
+      </div>
+    </div>
+
+    <div class="kw-category">
+      <div class="kw-cat-label">雰囲気・トーン</div>
+      <div class="kw-grid" data-cat="tone">
+        <label class="kw-label"><input type="checkbox" value="ドキドキ・ハラハラ"><span class="kw-check"></span>ドキドキ・ハラハラ</label>
+        <label class="kw-label"><input type="checkbox" value="じんわり切ない"><span class="kw-check"></span>じんわり切ない</label>
+        <label class="kw-label"><input type="checkbox" value="あったかい・ほっこり"><span class="kw-check"></span>あったかい・ほっこり</label>
+        <label class="kw-label"><input type="checkbox" value="不思議・幻想的"><span class="kw-check"></span>不思議・幻想的</label>
+        <label class="kw-label"><input type="checkbox" value="ゾクっとする"><span class="kw-check"></span>ゾクっとする</label>
+        <label class="kw-label"><input type="checkbox" value="笑える・ゆるい"><span class="kw-check"></span>笑える・ゆるい</label>
+        <label class="kw-label"><input type="checkbox" value="シリアス・重め"><span class="kw-check"></span>シリアス・重め</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- プロンプトプレビュー -->
+  <div class="card">
+    <div class="card-title">📝 Gemini に送るプロンプト（自動生成）</div>
+    <div id="prompt-preview">←　キーワードを選ぶとここにプロンプトが表示されるよ！</div>
+  </div>
+
+  <!-- 生成ボタン -->
+  <button id="generate-btn" disabled>✨ ストーリーを作る！</button>
+
+  <div class="loading-wrap" id="loading">
+    <div class="spinner"></div>
+    <span>Gemini が考え中… しばらく待ってね</span>
+  </div>
+  <div class="error-msg" id="error-msg"></div>
+
+  <!-- 結果 -->
+  <div id="result-area">
+    <div class="card">
+      <div class="card-title">📖 できたストーリー</div>
+      <div class="result-section">
+        <h3>あらすじ</h3>
+        <div id="result-synopsis"></div>
+      </div>
+      <div class="result-section" style="margin-top:12px;">
+        <h3>登場キャラクター</h3>
+        <div class="chara-cards" id="result-charas"></div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="action-btn" id="copy-btn">📋 テキストをコピー</button>
+      <button class="action-btn primary" id="save-btn">💾 Sheetsに保存</button>
+      <button class="action-btn" id="retry-btn">🔄 もう一度作る</button>
+      <button class="action-btn" id="reset-btn">↩ やり直す</button>
+    </div>
+    <div id="save-status"></div>
+  </div>
+
+  <div class="footer">
+    ふれあいタイム ｜ 第1回「AIで物語を作ろう」｜ 2026.5.11
+  </div>
+
+</div><!-- /.app -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  設定（先生が変更する箇所）
+// ═══════════════════════════════════════════════════════
+const CONFIG = {
+  // GAS Web App の URL をここに貼る
+  // 例: 'https://script.google.com/macros/s/AKfycb.../exec'
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzdSAoFA7G9ByUdbQDqDIUcDTn4iCI-vhD37BSJFK2CMzO7awdY_kz1j3SZdjnW8eXv/exec',
+};
+
+// ═══════════════════════════════════════════════════════
+//  DOM 参照
+// ═══════════════════════════════════════════════════════
+const elUserName     = document.getElementById('user-name');
+const elPreview      = document.getElementById('prompt-preview');
+const elGenBtn       = document.getElementById('generate-btn');
+const elLoading      = document.getElementById('loading');
+const elError        = document.getElementById('error-msg');
+const elResultArea   = document.getElementById('result-area');
+const elSynopsis     = document.getElementById('result-synopsis');
+const elCharas       = document.getElementById('result-charas');
+const elCopyBtn      = document.getElementById('copy-btn');
+const elSaveBtn      = document.getElementById('save-btn');
+const elRetryBtn     = document.getElementById('retry-btn');
+const elResetBtn     = document.getElementById('reset-btn');
+const elSaveStatus   = document.getElementById('save-status');
+
+// ═══════════════════════════════════════════════════════
+//  プロンプト自動生成
+// ═══════════════════════════════════════════════════════
+function getChecked() {
+  return [...document.querySelectorAll('.kw-grid input:checked')]
+    .map(el => el.value);
+}
+
+function buildPrompt(keywords) {
+  if (keywords.length === 0) return null;
+  return [
+    `以下のキーワードを使って、中学生向けのサウンドノベル用ショートストーリーを作ってください。`,
+    ``,
+    `【キーワード】${keywords.join('、')}`,
+    ``,
+    `【出力形式】（必ずこの形式で出力すること）`,
+    `---あらすじ---`,
+    `（100〜150字で書く）`,
+    ``,
+    `---キャラクター---`,
+    `キャラ1名前：（名前）`,
+    `キャラ1役割：（主人公／ヒロイン／ライバル など）`,
+    `キャラ1説明：（一言キャラ説明）`,
+    `キャラ2名前：（名前）`,
+    `キャラ2役割：（役割）`,
+    `キャラ2説明：（一言キャラ説明）`,
+    `キャラ3名前：（名前、いなければ「なし」）`,
+    `キャラ3役割：（役割）`,
+    `キャラ3説明：（一言キャラ説明）`,
+    `---`,
+    ``,
+    `読み手が「プレイしたい！」と思えるような、わくわくする設定にしてください。`,
+  ].join('\n');
+}
+
+function updatePreview() {
+  const kws = getChecked();
+  const prompt = buildPrompt(kws);
+  if (!prompt) {
+    elPreview.textContent = '← キーワードを選ぶとここにプロンプトが表示されるよ！';
+    elPreview.classList.remove('has-content');
+    elGenBtn.disabled = true;
+  } else {
+    elPreview.textContent = prompt;
+    elPreview.classList.add('has-content');
+    elGenBtn.disabled = false;
+  }
+}
+
+document.querySelectorAll('.kw-grid input').forEach(el =>
+  el.addEventListener('change', updatePreview)
+);
+updatePreview();
+
+// ═══════════════════════════════════════════════════════
+//  レスポンス パーサー
+//  Gemini の出力テキストから あらすじ＆キャラを抽出
+// ═══════════════════════════════════════════════════════
+function parseResponse(text) {
+  const synopsis = (text.match(/---あらすじ---\s*([\s\S]*?)\s*---キャラクター---/) || [])[1]?.trim() || '';
+  const charBlock = (text.match(/---キャラクター---\s*([\s\S]*?)\s*---/) || [])[1]?.trim() || '';
+
+  const charas = [];
+  for (let i = 1; i <= 3; i++) {
+    const name = (charBlock.match(new RegExp(`キャラ${i}名前：(.+)`)) || [])[1]?.trim();
+    const role = (charBlock.match(new RegExp(`キャラ${i}役割：(.+)`)) || [])[1]?.trim();
+    const desc = (charBlock.match(new RegExp(`キャラ${i}説明：(.+)`)) || [])[1]?.trim();
+    if (name && name !== 'なし') charas.push({ name, role, desc });
+  }
+  return { synopsis, charas, raw: text };
+}
+
+// ═══════════════════════════════════════════════════════
+//  生成処理
+// ═══════════════════════════════════════════════════════
+let lastResult = null;
+let lastPrompt = null;
+
+async function generate() {
+  const prompt = buildPrompt(getChecked());
+  if (!prompt) return;
+
+  lastPrompt = prompt;
+  setLoading(true);
+  hideError();
+  hideResult();
+
+  try {
+    if (!CONFIG.GAS_URL) {
+      throw new Error('GAS_URL が設定されていません。generator/index.html の CONFIG.GAS_URL を設定してください。');
+    }
+
+    // Content-Type を text/plain にすることでCORSプリフライトを回避
+    // (file:// → GAS 間ではapplication/jsonだとOPTIONSが通らない)
+    const res = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'generate', prompt }),
+      redirect: 'follow',
+    });
+    if (!res.ok) throw new Error(`サーバーエラー (HTTP ${res.status})`);
+
+    const data = await parseGasResponse(res);
+    if (data.error) throw new Error(data.error);
+
+    lastResult = parseResponse(data.text);
+    renderResult(lastResult);
+  } catch (e) {
+    showError(e.message);
+  } finally {
+    setLoading(false);
+  }
+}
+
+elGenBtn.addEventListener('click', generate);
+elRetryBtn.addEventListener('click', generate);
+
+// ═══════════════════════════════════════════════════════
+//  結果表示
+// ═══════════════════════════════════════════════════════
+function renderResult({ synopsis, charas }) {
+  elSynopsis.textContent = synopsis || '（あらすじを取得できませんでした）';
+
+  elCharas.innerHTML = '';
+  charas.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'chara-card';
+    card.innerHTML = `
+      <div class="chara-name">${esc(c.name)}</div>
+      <div class="chara-role">${esc(c.role || '')}</div>
+      <div class="chara-desc">${esc(c.desc || '')}</div>
+    `;
+    elCharas.appendChild(card);
+  });
+
+  elResultArea.classList.add('visible');
+  elResultArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  elSaveStatus.textContent = '';
+  elSaveStatus.className = '';
+}
+
+function hideResult() {
+  elResultArea.classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════════════
+//  コピー
+// ═══════════════════════════════════════════════════════
+elCopyBtn.addEventListener('click', () => {
+  if (!lastResult) return;
+  const { synopsis, charas } = lastResult;
+  const lines = [
+    '【あらすじ】',
+    synopsis,
+    '',
+    '【登場キャラクター】',
+    ...charas.map(c => `▸ ${c.name}（${c.role}）：${c.desc}`),
+  ];
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    const orig = elCopyBtn.textContent;
+    elCopyBtn.textContent = '✅ コピーしました！';
+    setTimeout(() => { elCopyBtn.textContent = orig; }, 2000);
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+//  Sheets 保存
+// ═══════════════════════════════════════════════════════
+elSaveBtn.addEventListener('click', async () => {
+  if (!lastResult) return;
+  if (!CONFIG.GAS_URL) {
+    setSaveStatus('GAS_URL が未設定です', false);
+    return;
+  }
+
+  elSaveBtn.disabled = true;
+  setSaveStatus('保存中…', null);
+
+  try {
+    const payload = {
+      action:      'save',
+      userName:    elUserName.value.trim() || '匿名',
+      keywords:    getChecked().join('、'),
+      promptSent:  lastPrompt,
+      storyRaw:    lastResult.raw,
+      synopsis:    lastResult.synopsis,
+      charas:      lastResult.charas,
+    };
+    const res = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload),
+      redirect: 'follow',
+    });
+    const data = await parseGasResponse(res);
+    if (data.error) throw new Error(data.error);
+    setSaveStatus('✅ 保存しました！（行 ' + (data.row || '?') + '）', true);
+  } catch (e) {
+    setSaveStatus('❌ 保存失敗：' + e.message, false);
+  } finally {
+    elSaveBtn.disabled = false;
+  }
+});
+
+function setSaveStatus(msg, ok) {
+  elSaveStatus.textContent = msg;
+  elSaveStatus.className = ok === true ? 'ok' : ok === false ? 'err' : '';
+}
+
+// ═══════════════════════════════════════════════════════
+//  リセット
+// ═══════════════════════════════════════════════════════
+elResetBtn.addEventListener('click', () => {
+  document.querySelectorAll('.kw-grid input').forEach(el => { el.checked = false; });
+  elUserName.value = '';
+  lastResult = null;
+  lastPrompt = null;
+  hideResult();
+  hideError();
+  updatePreview();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ═══════════════════════════════════════════════════════
+//  GAS レスポンス パーサー
+//  GAS が認証画面 HTML を返してきた場合を検出して分かりやすいエラーに変換
+// ═══════════════════════════════════════════════════════
+async function parseGasResponse(res) {
+  const text = await res.text();
+  // HTML が返ってきた = GAS デプロイのアクセス権が「全員」になっていない
+  if (text.trimStart().startsWith('<')) {
+    throw new Error(
+      'GAS が認証画面を返しました。\n' +
+      'GAS の「デプロイを管理」→「アクセスできるユーザー」を\n' +
+      '「全員（Googleアカウント不要）」に変更して再デプロイしてください。'
+    );
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('GAS からの応答を解析できませんでした: ' + text.slice(0, 100));
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  ユーティリティ
+// ═══════════════════════════════════════════════════════
+function setLoading(on) {
+  elLoading.classList.toggle('visible', on);
+  elGenBtn.disabled = on;
+}
+function showError(msg) {
+  elError.textContent = '⚠ ' + msg;
+  elError.classList.add('visible');
+}
+function hideError() {
+  elError.classList.remove('visible');
+}
+function esc(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
