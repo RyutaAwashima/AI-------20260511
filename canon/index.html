@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canon — テキストをノベル化するエディター</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: #0d0d1a;
+      color: #e8eaff;
+      min-height: 100vh;
+      padding: 20px 16px 60px;
+    }
+    h1, h2, h3 { font-weight: bold; }
+    button { font-family: inherit; cursor: pointer; }
+    input, textarea, select { font-family: inherit; }
+
+    .app {
+      max-width: 880px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* ヘッダー */
+    .header { text-align: center; padding: 16px 0 4px; }
+    .header .badge {
+      display: inline-block;
+      background: #7e57c2;
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 12px;
+      border-radius: 20px;
+      margin-bottom: 8px;
+      letter-spacing: 0.08em;
+    }
+    .header h1 { font-size: 22px; color: #c5caf7; letter-spacing: 0.04em; }
+    .header p { font-size: 12.5px; color: #667; margin-top: 5px; }
+
+    /* カード */
+    .card {
+      background: #13132a;
+      border: 1px solid #1e1e40;
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+    .card.disabled { opacity: 0.45; pointer-events: none; }
+    .card-title {
+      font-size: 13.5px;
+      font-weight: bold;
+      color: #b39ddb;
+      border-left: 3px solid #7e57c2;
+      padding-left: 8px;
+      margin-bottom: 14px;
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-title .step {
+      font-size: 10.5px;
+      background: #7e57c2;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 12px;
+      letter-spacing: 0.1em;
+    }
+
+    /* 入力共通 */
+    label.field { display: block; font-size: 12px; color: #889; margin-bottom: 5px; }
+    .input, .textarea {
+      width: 100%;
+      background: #0a0a1f;
+      border: 1px solid #2a2a50;
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #e8eaff;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input:focus, .textarea:focus { border-color: #7e57c2; }
+    .textarea { font-size: 13.5px; line-height: 1.7; resize: vertical; min-height: 220px; }
+    .row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .row > .col { flex: 1; min-width: 200px; }
+
+    .help {
+      font-size: 11.5px;
+      color: #556;
+      margin-top: 6px;
+    }
+
+    /* サンプルローダー */
+    .sample-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+    .sample-btn {
+      background: transparent;
+      border: 1px solid #2a2a50;
+      color: #9fa8da;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      border-radius: 14px;
+      transition: background 0.15s;
+    }
+    .sample-btn:hover { background: #1e1e40; border-color: #7e57c2; }
+
+    /* メインボタン */
+    .primary-btn {
+      width: 100%;
+      background: #7e57c2;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 13px;
+      font-size: 14.5px;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .primary-btn:hover:not(:disabled) { background: #9575cd; transform: translateY(-1px); }
+    .primary-btn:disabled { background: #2a2a50; color: #444; cursor: not-allowed; transform: none; }
+
+    /* キャラクター編集 */
+    .chara-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 10px;
+    }
+    .chara-edit-card {
+      background: #0a0a1f;
+      border: 1px solid #2a2a50;
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chara-edit-card .top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chara-edit-card .swatch {
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.15);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .chara-edit-card .name-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #e8eaff;
+      font-size: 14px;
+      font-weight: bold;
+      outline: none;
+      border-bottom: 1px dashed #2a2a50;
+      padding: 2px 0;
+    }
+    .chara-edit-card .name-input:focus { border-bottom-color: #7e57c2; }
+    .chara-edit-card .role { font-size: 11px; color: #667; }
+    .chara-edit-card select {
+      background: #13132a;
+      border: 1px solid #2a2a50;
+      color: #ccd;
+      font-size: 12px;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+    .chara-edit-card .pos-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 11.5px;
+      color: #889;
+    }
+    .chara-edit-card .delete-btn {
+      align-self: flex-end;
+      background: transparent;
+      border: none;
+      color: #555;
+      font-size: 11px;
+      cursor: pointer;
+    }
+    .chara-edit-card .delete-btn:hover { color: #ef5350; }
+    .add-chara-btn {
+      background: transparent;
+      border: 1.5px dashed #2a2a50;
+      color: #667;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 12.5px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .add-chara-btn:hover { border-color: #7e57c2; color: #b39ddb; }
+
+    /* チップ選択 */
+    .chip-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1.5px solid #2a2a50;
+      border-radius: 18px;
+      padding: 5px 12px;
+      font-size: 12.5px;
+      color: #aab;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s;
+    }
+    .chip:hover { border-color: #5c4a8e; color: #ccd; }
+    .chip.selected {
+      background: #4a3578;
+      border-color: #7e57c2;
+      color: #fff;
+    }
+    .chip .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ローダー / エラー */
+    .loading {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 13px;
+      color: #b39ddb;
+      padding: 10px 0;
+    }
+    .loading.visible { display: flex; }
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid #1e1e40;
+      border-top-color: #7e57c2;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error {
+      display: none;
+      background: #2a0a0a;
+      border: 1px solid #8b2222;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12.5px;
+      color: #f66;
+      white-space: pre-wrap;
+    }
+    .error.visible { display: block; }
+
+    /* 結果（JSON） */
+    .json-preview {
+      background: #0a0a1f;
+      border: 1px solid #2a2a50;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 11.5px;
+      line-height: 1.55;
+      color: #ccd;
+      max-height: 400px;
+      overflow: auto;
+      white-space: pre;
+    }
+    .json-preview.error-state { color: #f88; border-color: #8b2222; }
+
+    .stat-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      font-size: 11.5px;
+      color: #778;
+      margin-bottom: 10px;
+    }
+    .stat-row .stat b { color: #b39ddb; }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .action-btn {
+      flex: 1;
+      min-width: 130px;
+      background: transparent;
+      border: 1.5px solid #2a2a50;
+      border-radius: 8px;
+      color: #9fa8da;
+      padding: 10px 14px;
+      font-size: 13px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .action-btn:hover { background: #1e1e40; border-color: #7e57c2; }
+    .action-btn.primary {
+      background: #1a2060;
+      border-color: #7e57c2;
+      color: #c5caf7;
+    }
+    .action-btn.primary:hover { background: #283593; }
+
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #334;
+      margin-top: 10px;
+    }
+    .footer a { color: #5c4a8e; text-decoration: none; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ヘッダー -->
+  <div class="header">
+    <div class="badge">Mythos / Canon</div>
+    <h1>📜 カノン — テキストをノベルゲームに仕立てるエディター</h1>
+    <p>あらすじや小説をペーストするだけで、ソネットで遊べるノベルゲームJSONに変換するよ</p>
+  </div>
+
+  <!-- ─────────── STEP 1：原稿入力 ─────────── -->
+  <div class="card" id="card-step1">
+    <div class="card-title">📝 原稿を投入する <span class="step">STEP 1</span></div>
+
+    <div class="row" style="margin-bottom:12px;">
+      <div class="col">
+        <label class="field" for="opt-title">タイトル</label>
+        <input type="text" class="input" id="opt-title" placeholder="例：廃校の約束">
+      </div>
+      <div class="col">
+        <label class="field" for="opt-genre">ジャンル</label>
+        <input type="text" class="input" id="opt-genre" placeholder="例：ホラー・感動">
+      </div>
+    </div>
+
+    <label class="field" for="opt-text">本文（あらすじ・小説・自作テキストなど）</label>
+    <textarea class="textarea" id="opt-text" placeholder="ここに原稿を貼り付けてね（推奨：500〜2000文字）"></textarea>
+    <div class="help">※ 長すぎると変換に失敗しやすくなります。目安は 2000 文字以内。</div>
+
+    <div class="sample-row">
+      <span style="font-size:11px;color:#556;align-self:center;">サンプル：</span>
+      <button class="sample-btn" data-sample="aria">アリアの出力例</button>
+      <button class="sample-btn" data-sample="rashomon">羅生門（冒頭）</button>
+      <button class="sample-btn" data-sample="meros">走れメロス（冒頭）</button>
+      <button class="sample-btn" data-sample="clear">クリア</button>
+    </div>
+
+    <div style="margin-top:14px;">
+      <button class="primary-btn" id="btn-extract">🔍 登場人物を抽出する</button>
+    </div>
+    <div class="loading" id="loading-extract">
+      <div class="spinner"></div><span>キャラを読み取っています…</span>
+    </div>
+    <div class="error" id="error-extract"></div>
+  </div>
+
+  <!-- ─────────── STEP 2：キャラ編集 ─────────── -->
+  <div class="card disabled" id="card-step2">
+    <div class="card-title">👥 キャラクターを確認・調整 <span class="step">STEP 2</span></div>
+
+    <div class="chara-grid" id="chara-grid"></div>
+    <button class="add-chara-btn" id="btn-add-chara" style="margin-top:10px;width:100%;">＋ キャラクターを追加</button>
+
+    <div class="help" style="margin-top:10px;">
+      色をクリックすると変えられます。立ち位置（左／右）はセリフの表示位置です。
+    </div>
+  </div>
+
+  <!-- ─────────── STEP 3：背景・BGM選択 ─────────── -->
+  <div class="card disabled" id="card-step3">
+    <div class="card-title">🌆 使う背景とBGMを選ぶ <span class="step">STEP 3</span></div>
+
+    <div style="margin-bottom:14px;">
+      <label class="field">背景プリセット（複数選択OK）</label>
+      <div class="chip-grid" id="bg-chips"></div>
+    </div>
+
+    <div>
+      <label class="field">BGMプリセット（複数選択OK）</label>
+      <div class="chip-grid" id="bgm-chips"></div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <button class="primary-btn" id="btn-convert">🎼 ノベルJSONに変換する</button>
+    </div>
+    <div class="loading" id="loading-convert">
+      <div class="spinner"></div><span>シーンを組み立てています… 30秒ほどかかることがあります</span>
+    </div>
+    <div class="error" id="error-convert"></div>
+  </div>
+
+  <!-- ─────────── STEP 4：結果 ─────────── -->
+  <div class="card disabled" id="card-step4">
+    <div class="card-title">✨ 変換結果 <span class="step">STEP 4</span></div>
+
+    <div class="stat-row" id="stat-row"></div>
+    <pre class="json-preview" id="json-preview"></pre>
+
+    <div class="action-row">
+      <button class="action-btn primary" id="btn-download">💾 .json をダウンロード</button>
+      <button class="action-btn" id="btn-copy">📋 コピー</button>
+      <button class="action-btn" id="btn-reset">↩ 最初から</button>
+    </div>
+
+    <div class="help" style="margin-top:12px;">
+      ダウンロードしたファイルは <code>stories/</code> フォルダに置いて、
+      ソネット（sonnet）の <code>stories.js</code> から読み込ませると遊べます。
+      （次回のアップデートで自動接続予定！）
+    </div>
+  </div>
+
+  <div class="footer">
+    Mythos プロジェクト ｜ Canon Editor v0.1 ｜ powered by Gemini
+  </div>
+
+</div><!-- /.app -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  設定
+// ═══════════════════════════════════════════════════════
+const CONFIG = {
+  // アリアと同じ GAS の URL を使う（extract / convert アクションを追加済み）
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzdSAoFA7G9ByUdbQDqDIUcDTn4iCI-vhD37BSJFK2CMzO7awdY_kz1j3SZdjnW8eXv/exec',
+};
+
+// ═══════════════════════════════════════════════════════
+//  プリセット定義
+//  ※ sonnet 側 (stories.js / audio.js / renderer.js) と同じ key を使用
+// ═══════════════════════════════════════════════════════
+const BG_PRESETS = {
+  classroom:    { label: '教室',           color: '#1e2a4a', accent: '#2a3a5a' },
+  classroom_old:{ label: '廃校の教室',     color: '#1a1520', accent: '#2a2030' },
+  rooftop:      { label: '屋上（夕暮れ）', color: '#2a1a0a', accent: '#3a2810' },
+  hallway:      { label: '校舎の廊下',     color: '#1c1c28', accent: '#2c2c38' },
+  forest:       { label: '森',             color: '#0e2a1a', accent: '#1e4030' },
+  town:         { label: '街並み',         color: '#1f2030', accent: '#2f3045' },
+  night_street: { label: '夜の街',         color: '#0a0a1a', accent: '#1a1a2e' },
+  beach:        { label: '海辺',           color: '#0a2030', accent: '#1a3550' },
+  room:         { label: '部屋',           color: '#251c1c', accent: '#352828' },
+  library:      { label: '図書室',         color: '#1f1810', accent: '#2f2418' },
+  shrine:       { label: '神社・古い建物', color: '#1a1010', accent: '#2a1a14' },
+  sky:          { label: '青空',           color: '#3a5a8a', accent: '#5a7aaa' },
+  dungeon:      { label: '地下迷宮',       color: '#100a0a', accent: '#201818' },
+  spaceship:    { label: '宇宙船内',       color: '#0a0a20', accent: '#1a1a3a' },
+};
+
+// audio.js の BGM_PATTERNS と同じ key
+const BGM_PRESETS = {
+  eerie:      '不気味（低い唸り）',
+  emotional:  '切ない（ピアノ風）',
+  hopeful:    '希望（明るめ）',
+  cheerful:   'ポップ（軽快）',
+  silly:      'コミカル',
+  triumphant: '大げさ・勝利',
+  tense:      '緊張',
+  dramatic:   'ドラマチック',
+  action:     'アクション',
+};
+
+// renderer.js の EXPRESSION_FACES と同じ key
+const EXPRESSIONS = [
+  'normal', 'happy', 'sad', 'surprised', 'angry', 'tired',
+  'confused', 'smile', 'blank', 'serious', 'shocked', 'alert',
+  'concerned', 'neutral', 'smirk',
+];
+
+// キャラ色のおすすめパレット（順に割当）
+const CHARA_COLORS = [
+  '#c8a0c8', '#a0c0e8', '#f0c060', '#80c090',
+  '#e89090', '#a090d0', '#60c0c0', '#d0a070',
+];
+
+// ═══════════════════════════════════════════════════════
+//  状態
+// ═══════════════════════════════════════════════════════
+let state = {
+  charas: [],          // [{ key, name, role, color, position }]
+  selectedBgs: ['classroom'],
+  selectedBgms: ['emotional'],
+  resultJson: null,
+};
+
+// ═══════════════════════════════════════════════════════
+//  DOM 参照
+// ═══════════════════════════════════════════════════════
+const $ = (id) => document.getElementById(id);
+const elText      = $('opt-text');
+const elTitle     = $('opt-title');
+const elGenre     = $('opt-genre');
+const elCardStep2 = $('card-step2');
+const elCardStep3 = $('card-step3');
+const elCardStep4 = $('card-step4');
+const elCharaGrid = $('chara-grid');
+const elBgChips   = $('bg-chips');
+const elBgmChips  = $('bgm-chips');
+const elJsonPrev  = $('json-preview');
+const elStatRow   = $('stat-row');
+
+// ═══════════════════════════════════════════════════════
+//  サンプルテキスト
+// ═══════════════════════════════════════════════════════
+const SAMPLES = {
+  aria: {
+    title: 'AIが生んだ夜の物語',
+    genre: '青春・ファンタジー',
+    text:
+`【あらすじ】
+夜の図書室に閉じ込められた中学生のリンは、本棚の影から現れた不思議な少年・ノアと出会う。彼は百年前の図書室の番人だという。図書室の本が一冊ずつ消えていく謎を、二人は朝までに解かなくてはならない。
+
+【本文】
+時計の針が夜の十時を回ったとき、リンはまだ図書室にいた。
+「やばっ……扉が閉まってる」
+慌ててドアを引いても、ノブはびくともしない。
+そのとき、奥の本棚の影から、ふっと足音がした。
+「君も、選ばれたんだね」
+振り返ると、見たことのない少年が立っていた。古い学生服の襟元が、月明かりに白く浮かび上がる。
+「だ、誰……？」
+「ノア。この図書室の番人だよ」
+ノアは、棚の隙間にぽっかり空いた一冊分の空白を指さした。
+「本が、消えていってるんだ。朝までに止めないと、この図書室ごと、無くなってしまう」`
+  },
+  rashomon: {
+    title: '羅生門',
+    genre: '文学・古典',
+    text:
+`ある日の暮方の事である。一人の下人が、羅生門の下で雨やみを待っていた。
+広い門の下には、この男のほかに誰もいない。ただ、所々丹塗の剥げた、大きな円柱に、蟋蟀が一匹とまっている。羅生門が、朱雀大路にある以上は、この男のほかにも、雨やみをする市女笠や揉烏帽子が、もう二三人はありそうなものである。それが、この男のほかには誰もいない。
+何故かと云うと、この二三年、京都には、地震とか辻風とか火事とか饑饉とか云う災いがつづいて起った。そこで洛中のさびれ方は一通りでない。旧記によると、仏像や仏具を打砕いて、その丹がついたり、金銀の箔がついたりした木を、路ばたにつみ重ねて、薪の料に売っていたと云う事である。
+下人は、七段ある石段の一番上の段に、洗いざらした紺の襖の尻を据えて、大きな面皰を気にしながら、ぼんやり、雨のふるのを眺めていた。`
+  },
+  meros: {
+    title: '走れメロス',
+    genre: '文学・古典',
+    text:
+`メロスは激怒した。必ず、かの邪智暴虐の王を除かなければならぬと決意した。メロスには政治がわからぬ。メロスは、村の牧人である。笛を吹き、羊と遊んで暮して来た。けれども邪悪に対しては、人一倍に敏感であった。
+きょう未明メロスは村を出発し、野を越え山越え、十里はなれた此のシラクスの市にやって来た。メロスには父も、母も無い。女房も無い。十六の、内気な妹と二人暮しだ。この妹は、村のある律気な一牧人を、近々、花婿として迎える事になっていた。結婚式も間近かなのである。メロスは、それゆえ、花嫁の衣裳やら祝宴の御馳走やらを買いに、はるばる市にやって来たのだ。
+先ず、その品々を買い集め、それから都の大路をぶらぶら歩いた。メロスには竹馬の友があった。セリヌンティウスである。今は此のシラクスの市で、石工をしている。`
+  },
+};
+
+document.querySelectorAll('.sample-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.sample;
+    if (key === 'clear') {
+      elTitle.value = ''; elGenre.value = ''; elText.value = '';
+      return;
+    }
+    const s = SAMPLES[key];
+    if (!s) return;
+    elTitle.value = s.title; elGenre.value = s.genre; elText.value = s.text;
+  });
+});
+
+// ═══════════════════════════════════════════════════════
+//  STEP 1 → STEP 2：キャラ抽出
+// ═══════════════════════════════════════════════════════
+$('btn-extract').addEventListener('click', extractCharacters);
+
+async function extractCharacters() {
+  const text = elText.value.trim();
+  if (!text) { showErr('error-extract', '本文を入力してください'); return; }
+  if (text.length > 5000) { showErr('error-extract', '本文が長すぎます（5000文字以内推奨）'); return; }
+
+  hideErr('error-extract');
+  toggleLoad('loading-extract', true);
+
+  const prompt = buildExtractPrompt(text);
+
+  try {
+    const resp = await callGas({ action: 'extract', prompt });
+    const parsed = parseExtractResponse(resp.text);
+    if (parsed.length === 0) throw new Error('登場人物を抽出できませんでした。本文を増やすか、明確な台詞を含めてください。');
+
+    state.charas = parsed.map((c, i) => ({
+      key: toKey(c.name, i),
+      name: c.name,
+      role: c.role || '',
+      color: CHARA_COLORS[i % CHARA_COLORS.length],
+      position: i % 2 === 0 ? 'left' : 'right',
+    }));
+
+    renderCharaGrid();
+    renderBgChips();
+    renderBgmChips();
+    enableCard(elCardStep2);
+    enableCard(elCardStep3);
+    elCardStep2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    showErr('error-extract', e.message);
+  } finally {
+    toggleLoad('loading-extract', false);
+  }
+}
+
+function buildExtractPrompt(text) {
+  return [
+    '次のテキストに登場する主要人物を最大4名まで抽出してください。',
+    '地の文の語り手（ナレーター）は抽出しないでください。',
+    '',
+    '【出力形式】（必ずこの形式で、余計な説明は書かないこと）',
+    '人物1名前: （名前）',
+    '人物1役割: （主人公／ヒロイン／敵役／脇役 のいずれか）',
+    '人物2名前: （名前）',
+    '人物2役割: （役割）',
+    '人物3名前: （名前、いなければ「なし」）',
+    '人物3役割: （役割）',
+    '人物4名前: （名前、いなければ「なし」）',
+    '人物4役割: （役割）',
+    '',
+    '【テキスト】',
+    text,
+  ].join('\n');
+}
+
+function parseExtractResponse(text) {
+  const norm = text.replace(/\*+/g, '').replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  const charas = [];
+  for (let i = 1; i <= 4; i++) {
+    const reName = new RegExp(`人物\\s*${i}\\s*名前\\s*[：:]\\s*(.+)`);
+    const reRole = new RegExp(`人物\\s*${i}\\s*役割\\s*[：:]\\s*(.+)`);
+    const name = (norm.match(reName) || [])[1]?.trim();
+    const role = (norm.match(reRole) || [])[1]?.trim();
+    if (name && name !== 'なし' && !/^（.+）$/.test(name)) {
+      charas.push({ name, role: role || '' });
+    }
+  }
+  return charas;
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 2：キャラ編集UI
+// ═══════════════════════════════════════════════════════
+function renderCharaGrid() {
+  elCharaGrid.innerHTML = '';
+  state.charas.forEach((c, idx) => {
+    const card = document.createElement('div');
+    card.className = 'chara-edit-card';
+    card.innerHTML = `
+      <div class="top">
+        <span class="swatch" style="background:${c.color}" title="クリックで色変更"></span>
+        <input class="name-input" type="text" value="${esc(c.name)}" placeholder="名前">
+      </div>
+      <div class="role">役割：${esc(c.role || '—')}</div>
+      <div class="pos-row">
+        <span>立ち位置:</span>
+        <select class="pos-select">
+          <option value="left"  ${c.position==='left' ?'selected':''}>左（L）</option>
+          <option value="right" ${c.position==='right'?'selected':''}>右（R）</option>
+        </select>
+      </div>
+      <button class="delete-btn">× 削除</button>
+      <input type="color" class="color-input" value="${c.color}" style="display:none;">
+    `;
+    const swatch    = card.querySelector('.swatch');
+    const nameInput = card.querySelector('.name-input');
+    const posSel    = card.querySelector('.pos-select');
+    const delBtn    = card.querySelector('.delete-btn');
+    const colorInp  = card.querySelector('.color-input');
+
+    swatch.addEventListener('click', () => colorInp.click());
+    colorInp.addEventListener('input', () => {
+      c.color = colorInp.value;
+      swatch.style.background = c.color;
+    });
+    nameInput.addEventListener('input', () => { c.name = nameInput.value.trim(); });
+    posSel.addEventListener('change', () => { c.position = posSel.value; });
+    delBtn.addEventListener('click', () => {
+      state.charas.splice(idx, 1);
+      renderCharaGrid();
+    });
+    elCharaGrid.appendChild(card);
+  });
+}
+
+$('btn-add-chara').addEventListener('click', () => {
+  const i = state.charas.length;
+  state.charas.push({
+    key: 'chara_' + (i + 1),
+    name: '新キャラ' + (i + 1),
+    role: '',
+    color: CHARA_COLORS[i % CHARA_COLORS.length],
+    position: i % 2 === 0 ? 'left' : 'right',
+  });
+  renderCharaGrid();
+});
+
+// ═══════════════════════════════════════════════════════
+//  STEP 3：プリセットチップ
+// ═══════════════════════════════════════════════════════
+function renderBgChips() {
+  elBgChips.innerHTML = '';
+  Object.entries(BG_PRESETS).forEach(([key, data]) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip' + (state.selectedBgs.includes(key) ? ' selected' : '');
+    chip.innerHTML = `<span class="dot" style="background:${data.color};border:1px solid ${data.accent}"></span>${esc(data.label)}`;
+    chip.addEventListener('click', () => {
+      const i = state.selectedBgs.indexOf(key);
+      if (i >= 0) state.selectedBgs.splice(i, 1);
+      else state.selectedBgs.push(key);
+      renderBgChips();
+    });
+    elBgChips.appendChild(chip);
+  });
+}
+
+function renderBgmChips() {
+  elBgmChips.innerHTML = '';
+  Object.entries(BGM_PRESETS).forEach(([key, label]) => {
+    const chip = document.createElement('span');
+    chip.className = 'chip' + (state.selectedBgms.includes(key) ? ' selected' : '');
+    chip.textContent = `${key}：${label}`;
+    chip.addEventListener('click', () => {
+      const i = state.selectedBgms.indexOf(key);
+      if (i >= 0) state.selectedBgms.splice(i, 1);
+      else state.selectedBgms.push(key);
+      renderBgmChips();
+    });
+    elBgmChips.appendChild(chip);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 3 → STEP 4：ノベルJSONへ変換
+// ═══════════════════════════════════════════════════════
+$('btn-convert').addEventListener('click', convertToNovel);
+
+async function convertToNovel() {
+  if (state.charas.length === 0) { showErr('error-convert', 'キャラクターが0人です'); return; }
+  if (state.selectedBgs.length === 0)  { showErr('error-convert', '背景を1つ以上選んでください'); return; }
+  if (state.selectedBgms.length === 0) { showErr('error-convert', 'BGMを1つ以上選んでください'); return; }
+
+  // キャラのキー重複防止＆未入力名チェック
+  const seen = new Set();
+  for (const c of state.charas) {
+    if (!c.name) { showErr('error-convert', '名前が空のキャラがあります'); return; }
+    if (seen.has(c.key)) c.key = c.key + '_' + Math.random().toString(36).slice(2, 5);
+    seen.add(c.key);
+  }
+
+  hideErr('error-convert');
+  toggleLoad('loading-convert', true);
+
+  const prompt = buildConvertPrompt();
+
+  try {
+    const resp = await callGas({ action: 'convert', prompt });
+    const scenes = parseConvertResponse(resp.text);
+    if (scenes.length === 0) throw new Error('シーンを生成できませんでした。本文を増やすか、もう一度試してください。');
+
+    state.resultJson = buildFinalJson(scenes);
+    renderResult();
+    enableCard(elCardStep4);
+    elCardStep4.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    showErr('error-convert', e.message);
+  } finally {
+    toggleLoad('loading-convert', false);
+  }
+}
+
+function buildConvertPrompt() {
+  const text = elText.value.trim();
+  const charLines = state.charas
+    .map(c => `- ${c.key}（名前: ${c.name}, 立ち位置: ${c.position}）`).join('\n');
+  const bgLines = state.selectedBgs
+    .map(k => `- ${k}（${BG_PRESETS[k].label}）`).join('\n');
+  const bgmLines = state.selectedBgms
+    .map(k => `- ${k}（${BGM_PRESETS[k]}）`).join('\n');
+
+  return [
+    '次の物語をサウンドノベル用のシーンスクリプトに変換してください。',
+    '',
+    '【ルール】',
+    '- 物語を3〜6シーンに分け、各シーンは 4〜10 行で構成してください。',
+    '- 各行は次のいずれか1種類です：',
+    '  (1) ナレーション   ：N: ここに地の文',
+    '  (2) セリフ         ：D: <キャラkey> <表情> | ここにセリフ',
+    '  (3) シーン区切り   ：=== SCENE_END background:<bg_key> bgm:<bgm_key> ===',
+    '- セリフのキャラkey は下記「登場人物」のkeyのみ使用。',
+    '- 表情は次のいずれか：' + EXPRESSIONS.join(', '),
+    '- シーン冒頭で背景とBGMを指定。',
+    '- 物語の最後の行は必ず「=== END ===」を1行だけ。',
+    '- 余計な説明・前置きは出力しないこと。',
+    '',
+    '【登場人物】',
+    charLines,
+    '',
+    '【使える背景】',
+    bgLines,
+    '',
+    '【使えるBGM】',
+    bgmLines,
+    '',
+    '【物語】',
+    text,
+    '',
+    '【出力例】',
+    '=== SCENE_END background:classroom bgm:eerie ===',
+    'N: 廃校になって三年。誰も近づかない場所だった。',
+    'D: haruka surprised | え……っ！？　誰！？',
+    'N: 風が窓を揺らした。',
+    '=== SCENE_END background:rooftop bgm:emotional ===',
+    'D: yui sad | ……来てくれて、ありがとう。',
+    '=== END ===',
+  ].join('\n');
+}
+
+function parseConvertResponse(text) {
+  const charKeys = new Set(state.charas.map(c => c.key));
+  const bgKeys   = new Set(state.selectedBgs);
+  const bgmKeys  = new Set(state.selectedBgms);
+
+  // 1行ずつ処理。最初のSCENE_ENDが「シーン開始の宣言」を兼ねる。
+  const lines = text.split(/\r?\n/);
+  const scenes = [];
+  let currentBg  = state.selectedBgs[0];
+  let currentBgm = state.selectedBgms[0];
+  let buffer = [];
+
+  function flush() {
+    if (buffer.length === 0) return;
+    scenes.push({
+      id: `scene_${String(scenes.length + 1).padStart(3, '0')}`,
+      background: currentBg,
+      bgm: currentBgm,
+      lines: buffer,
+    });
+    buffer = [];
+  }
+
+  for (let raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    if (line.startsWith('```')) continue;
+
+    // シーン区切り
+    const sceneMatch = line.match(/===\s*SCENE_END\s+background\s*:\s*(\w+)\s+bgm\s*:\s*(\w+)\s*===/i);
+    if (sceneMatch) {
+      flush();
+      const bg = sceneMatch[1], bgm = sceneMatch[2];
+      currentBg  = bgKeys.has(bg)  ? bg  : currentBg;
+      currentBgm = bgmKeys.has(bgm) ? bgm : currentBgm;
+      continue;
+    }
+    if (/===\s*END\s*===/i.test(line)) { flush(); break; }
+
+    // ナレーション
+    let m = line.match(/^N\s*[:：]\s*(.+)$/);
+    if (m) { buffer.push({ type: 'narration', text: m[1].trim() }); continue; }
+
+    // セリフ
+    m = line.match(/^D\s*[:：]\s*(\S+)\s+(\S+)\s*[|｜]\s*(.+)$/);
+    if (m) {
+      const [, ck, expr, txt] = m;
+      if (!charKeys.has(ck)) continue; // 不明なキャラはスキップ
+      const chara = state.charas.find(c => c.key === ck);
+      buffer.push({
+        type: 'dialogue',
+        character: ck,
+        position: chara.position,
+        expression: EXPRESSIONS.includes(expr) ? expr : 'normal',
+        text: txt.trim(),
+      });
+      continue;
+    }
+    // それ以外は無視（保険）
+  }
+  flush();
+
+  // scene_end で次シーンへ繋ぐ
+  scenes.forEach((sc, i) => {
+    if (i < scenes.length - 1) {
+      sc.lines.push({ type: 'scene_end', next: scenes[i + 1].id });
+    } else {
+      sc.lines.push({ type: 'scene_end' });
+    }
+  });
+  return scenes;
+}
+
+function buildFinalJson(scenes) {
+  const usedBgs = new Set();
+  const usedBgms = new Set();
+  scenes.forEach(s => { usedBgs.add(s.background); usedBgms.add(s.bgm); });
+
+  const characters = {};
+  state.charas.forEach(c => {
+    characters[c.key] = { name: c.name, color: c.color, emoji: '🙂' };
+  });
+  const backgrounds = {};
+  [...usedBgs].forEach(k => { if (BG_PRESETS[k]) backgrounds[k] = { ...BG_PRESETS[k] }; });
+  const bgm = {};
+  [...usedBgms].forEach(k => { if (BGM_PRESETS[k]) bgm[k] = BGM_PRESETS[k]; });
+
+  return {
+    meta: {
+      id:         'canon_' + Date.now(),
+      title:      elTitle.value.trim() || '無題のノベル',
+      genre:      elGenre.value.trim() || '—',
+      author:     'Canon Editor',
+      created_at: new Date().toISOString(),
+      assets: { characters, backgrounds, bgm },
+    },
+    scenes,
+  };
+}
+
+function renderResult() {
+  const j = state.resultJson;
+  const totalLines = j.scenes.reduce((a, s) => a + s.lines.length, 0);
+  elStatRow.innerHTML = `
+    <span class="stat">タイトル：<b>${esc(j.meta.title)}</b></span>
+    <span class="stat">シーン数：<b>${j.scenes.length}</b></span>
+    <span class="stat">行数：<b>${totalLines}</b></span>
+    <span class="stat">キャラ数：<b>${Object.keys(j.meta.assets.characters).length}</b></span>
+  `;
+  elJsonPrev.classList.remove('error-state');
+  elJsonPrev.textContent = JSON.stringify(j, null, 2);
+}
+
+// ═══════════════════════════════════════════════════════
+//  STEP 4：DL／コピー／リセット
+// ═══════════════════════════════════════════════════════
+$('btn-download').addEventListener('click', () => {
+  if (!state.resultJson) return;
+  const blob = new Blob([JSON.stringify(state.resultJson, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const safeTitle = (state.resultJson.meta.title || 'novel').replace(/[\\/:*?"<>|]/g, '_');
+  a.href = url;
+  a.download = `${state.resultJson.meta.id}_${safeTitle}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+$('btn-copy').addEventListener('click', () => {
+  if (!state.resultJson) return;
+  navigator.clipboard.writeText(JSON.stringify(state.resultJson, null, 2)).then(() => {
+    const orig = $('btn-copy').textContent;
+    $('btn-copy').textContent = '✅ コピーしました！';
+    setTimeout(() => { $('btn-copy').textContent = orig; }, 1800);
+  });
+});
+
+$('btn-reset').addEventListener('click', () => {
+  if (!confirm('入力と結果をすべて消して最初からやり直します。よろしいですか？')) return;
+  elText.value = ''; elTitle.value = ''; elGenre.value = '';
+  state = { charas: [], selectedBgs: ['classroom'], selectedBgms: ['emotional'], resultJson: null };
+  elCharaGrid.innerHTML = '';
+  elJsonPrev.textContent = '';
+  elStatRow.innerHTML = '';
+  disableCard(elCardStep2);
+  disableCard(elCardStep3);
+  disableCard(elCardStep4);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// ═══════════════════════════════════════════════════════
+//  GAS 通信
+// ═══════════════════════════════════════════════════════
+async function callGas(payload) {
+  if (!CONFIG.GAS_URL) throw new Error('CONFIG.GAS_URL が未設定です。');
+  const res = await fetch(CONFIG.GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload),
+    redirect: 'follow',
+  });
+  if (!res.ok) throw new Error(`サーバーエラー (HTTP ${res.status})`);
+  const text = await res.text();
+  if (text.trimStart().startsWith('<')) {
+    throw new Error('GASが認証画面を返しました。デプロイのアクセス権を「全員」に設定して再デプロイしてください。');
+  }
+  let data;
+  try { data = JSON.parse(text); }
+  catch { throw new Error('GAS応答の解析に失敗：' + text.slice(0, 100)); }
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+// ═══════════════════════════════════════════════════════
+//  ユーティリティ
+// ═══════════════════════════════════════════════════════
+function enableCard(el)  { el.classList.remove('disabled'); }
+function disableCard(el) { el.classList.add('disabled'); }
+function toggleLoad(id, on) { $(id).classList.toggle('visible', on); }
+function showErr(id, msg) { const el = $(id); el.textContent = '⚠ ' + msg; el.classList.add('visible'); }
+function hideErr(id) { $(id).classList.remove('visible'); }
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function toKey(name, idx) {
+  // ASCII化できないので、簡易ローマ字 or chara_n を使う
+  const ascii = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+  return ascii.length >= 2 ? ascii : ('chara_' + (idx + 1));
+}
+
+// 初期描画
+renderBgChips();
+renderBgmChips();
+</script>
+</body>
+</html>

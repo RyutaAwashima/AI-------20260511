@@ -7,7 +7,7 @@
  *  3. スプレッドシートのIDを SPREADSHEET_ID に設定
  *  4. 「デプロイ」→「新しいデプロイ」→「ウェブアプリ」
  *     アクセスできるユーザー：「全員」
- *  5. デプロイ後の URL を generator/index.html の CONFIG.GAS_URL に貼る
+ *  5. デプロイ後の URL を aria/index.html および canon/index.html の CONFIG.GAS_URL に貼る
  */
 
 // ── 設定 ──────────────────────────────────────────────
@@ -69,6 +69,14 @@ function doPost(e) {
     if (action === 'save') {
       return handleSave(body);
     }
+    if (action === 'extract') {
+      // Canon: テキストから登場人物を抽出
+      return handleExtract(body);
+    }
+    if (action === 'convert') {
+      // Canon: テキスト＋確定キャラ＋背景候補からノベルJSONへ変換
+      return handleConvert(body);
+    }
     throw new Error('不明な action: ' + action);
 
   } catch (err) {
@@ -82,13 +90,32 @@ function doPost(e) {
 function handleGenerate(body) {
   const prompt = (body.prompt || '').trim();
   if (!prompt) throw new Error('prompt が空です');
+  return callGemini(prompt, { maxOutputTokens: 1024, temperature: 1.0 });
+}
+
+// ── Canon: キャラ抽出（軽量） ─────────────────────────
+function handleExtract(body) {
+  const prompt = (body.prompt || '').trim();
+  if (!prompt) throw new Error('prompt が空です');
+  return callGemini(prompt, { maxOutputTokens: 1024, temperature: 0.4 });
+}
+
+// ── Canon: ノベル化変換（重め） ───────────────────────
+function handleConvert(body) {
+  const prompt = (body.prompt || '').trim();
+  if (!prompt) throw new Error('prompt が空です');
+  return callGemini(prompt, { maxOutputTokens: 4096, temperature: 0.7 });
+}
+
+// ── 共通 Gemini クライアント ──────────────────────────
+function callGemini(prompt, opts) {
   if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY が設定されていません');
 
   const payload = {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
-      temperature: 1.0,
-      maxOutputTokens: 1024,
+      temperature:     opts.temperature     ?? 1.0,
+      maxOutputTokens: opts.maxOutputTokens ?? 1024,
     },
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_MEDIUM_AND_ABOVE' },

@@ -1,6 +1,6 @@
 /**
- * engine.js
- * ストーリー進行の制御（スクリプト読み込み・シーン遷移・入力受付）
+ * engine.js — Mythos / Sonnet (ストーリー進行制御)
+ * スクリプト読み込み・シーン遷移・入力受付を担当
  */
 
 const Engine = (() => {
@@ -41,7 +41,7 @@ const Engine = (() => {
     Renderer.hideChoices();
 
     elOverlay.innerHTML = `
-      <div id="overlay-title">Sound Novel Engine</div>
+      <div id="overlay-title">Mythos / Sonnet</div>
       <div id="overlay-sub">prototype v0.1</div>
       <div id="overlay-message">ストーリーを選んでください</div>
       <div id="story-list"></div>

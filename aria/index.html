@@ -531,17 +531,41 @@ updatePreview();
 // ═══════════════════════════════════════════════════════
 //  レスポンス パーサー
 //  Gemini の出力テキストから あらすじ＆キャラを抽出
+//  - 末尾の「---」区切りが省略されても動く
+//  - 全角/半角コロン、マークダウン装飾(**)、全角数字に寛容
 // ═══════════════════════════════════════════════════════
 function parseResponse(text) {
-  const synopsis = (text.match(/---あらすじ---\s*([\s\S]*?)\s*---キャラクター---/) || [])[1]?.trim() || '';
-  const charBlock = (text.match(/---キャラクター---\s*([\s\S]*?)\s*---/) || [])[1]?.trim() || '';
+  // 区切り線の表記ゆれを正規化（**---あらすじ---** 等を ---あらすじ--- に）
+  const norm = text.replace(/\*+/g, '');
+
+  // あらすじ：「---あらすじ---」から「---キャラクター---」直前まで
+  const synopsis =
+    (norm.match(/---\s*あらすじ\s*---\s*([\s\S]*?)\s*---\s*キャラクター\s*---/) || [])[1]?.trim() || '';
+
+  // キャラブロック：「---キャラクター---」以降すべて（末尾「---」はあれば除去）
+  let charBlock =
+    (norm.match(/---\s*キャラクター\s*---\s*([\s\S]*)$/) || [])[1]?.trim() || '';
+  charBlock = charBlock.replace(/\n?---\s*$/, '').trim();
+
+  // 全角数字 → 半角数字に揃える
+  const halfDigits = (s) => s.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
 
   const charas = [];
   for (let i = 1; i <= 3; i++) {
-    const name = (charBlock.match(new RegExp(`キャラ${i}名前：(.+)`)) || [])[1]?.trim();
-    const role = (charBlock.match(new RegExp(`キャラ${i}役割：(.+)`)) || [])[1]?.trim();
-    const desc = (charBlock.match(new RegExp(`キャラ${i}説明：(.+)`)) || [])[1]?.trim();
-    if (name && name !== 'なし') charas.push({ name, role, desc });
+    // 「キャラ1名前」「キャラ1の名前」どちらにも対応、コロンは [：:]
+    const reName = new RegExp(`キャラ\\s*${i}\\s*の?\\s*名前\\s*[：:]\\s*(.+)`);
+    const reRole = new RegExp(`キャラ\\s*${i}\\s*の?\\s*役割\\s*[：:]\\s*(.+)`);
+    const reDesc = new RegExp(`キャラ\\s*${i}\\s*の?\\s*説明\\s*[：:]\\s*(.+)`);
+
+    const target = halfDigits(charBlock);
+    const name = (target.match(reName) || [])[1]?.trim();
+    const role = (target.match(reRole) || [])[1]?.trim();
+    const desc = (target.match(reDesc) || [])[1]?.trim();
+
+    // 「（名前）」のようなプレースホルダ／空／なし は除外
+    if (name && name !== 'なし' && !/^（.+）$/.test(name)) {
+      charas.push({ name, role: role || '', desc: desc || '' });
+    }
   }
   return { synopsis, charas, raw: text };
 }
@@ -563,7 +587,7 @@ async function generate() {
 
   try {
     if (!CONFIG.GAS_URL) {
-      throw new Error('GAS_URL が設定されていません。generator/index.html の CONFIG.GAS_URL を設定してください。');
+      throw new Error('GAS_URL が設定されていません。aria/index.html の CONFIG.GAS_URL を設定してください。');
     }
 
     // Content-Type を text/plain にすることでCORSプリフライトを回避
