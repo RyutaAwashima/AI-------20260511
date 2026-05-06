@@ -77,6 +77,34 @@ function doPost(e) {
       // Canon: テキスト＋確定キャラ＋背景候補からノベルJSONへ変換
       return handleConvert(body);
     }
+    if (action === 'weave') {
+      // Aria: フルストーリー生成（長め）
+      return handleWeave(body);
+    }
+    if (action === 'list_aria_stories') {
+      // Canon連携: Ariaが紡いだストーリー一覧（H列あり）
+      return handleListAriaStories(body);
+    }
+    if (action === 'load_aria_story') {
+      // Canon連携: Aria行の中身を取得
+      return handleLoadAriaStory(body);
+    }
+    if (action === 'save_canon_json') {
+      // Canon連携: ノベルJSONをI/J/K列に書き込む（rowNumあり=更新、なし=新規行）
+      return handleSaveCanonJson(body);
+    }
+    if (action === 'list_stories') {
+      // Sonnet連携: ノベルJSONがある行の一覧
+      return handleListStories(body);
+    }
+    if (action === 'load_story') {
+      // Sonnet連携: ノベルJSONを取得
+      return handleLoadStory(body);
+    }
+    // 下位互換（旧story_storeシート）
+    if (action === 'save_story') {
+      return handleSaveCanonJson(body);
+    }
     throw new Error('不明な action: ' + action);
 
   } catch (err) {
@@ -170,7 +198,8 @@ function handleSave(body) {
     (body.synopsis   || '').trim(),   // D: あらすじ
     charasText,                       // E: キャラクター
     (body.promptSent || '').trim(),   // F: 送ったプロンプト（全文）
-    (body.storyRaw   || '').trim(),   // G: Gemini の生出力
+    (body.storyRaw   || '').trim(),   // G: Gemini 生出力（あらすじ）
+    (body.fullStory  || '').trim(),   // H: フルストーリー
   ];
 
   sheet.appendRow(row);
@@ -182,17 +211,19 @@ function handleSave(body) {
 }
 
 // ── シートがなければ作ってヘッダーを付ける ─────────────
+//   A日時 / B名前 / Cキーワード / Dあらすじ / Eキャラ /
+//   Fプロンプト / G生出力 / Hフルストーリー  ← Aria
+//   IノベルJSON / J表示タイトル / K表示ジャンル ← Canon→Sonnet
 function getOrCreateSheet(ss) {
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
     sheet.appendRow([
       '日時', '名前', 'キーワード', 'あらすじ',
-      'キャラクター', 'プロンプト(全文)', 'Gemini生出力',
+      'キャラクター', 'プロンプト(全文)', 'Gemini生出力(あらすじ)', 'フルストーリー',
+      'ノベルJSON', '表示タイトル', '表示ジャンル',
     ]);
-    // ヘッダー行を固定
     sheet.setFrozenRows(1);
-    // 幅を調整
     sheet.setColumnWidth(1, 130);
     sheet.setColumnWidth(2, 80);
     sheet.setColumnWidth(3, 200);
@@ -200,6 +231,164 @@ function getOrCreateSheet(ss) {
     sheet.setColumnWidth(5, 300);
     sheet.setColumnWidth(6, 400);
     sheet.setColumnWidth(7, 400);
+    sheet.setColumnWidth(8, 600);
+    sheet.setColumnWidth(9, 600);
+    sheet.setColumnWidth(10, 200);
+    sheet.setColumnWidth(11, 140);
+  } else {
+    const lastCol = sheet.getLastColumn();
+    if (lastCol < 11) {
+      const allHeaders = ['ノベルJSON', '表示タイトル', '表示ジャンル'];
+      const need = 11 - lastCol;
+      sheet.getRange(1, lastCol + 1, 1, need)
+           .setValues([allHeaders.slice(allHeaders.length - need)]);
+      sheet.setColumnWidth(9, 600);
+      sheet.setColumnWidth(10, 200);
+      sheet.setColumnWidth(11, 140);
+    }
   }
   return sheet;
+}
+
+// ── Weave: フルストーリー生成（長め） ─────────────────
+function handleWeave(body) {
+  const prompt = (body.prompt || '').trim();
+  if (!prompt) throw new Error('prompt が空です');
+  return callGemini(prompt, { maxOutputTokens: 2048, temperature: 0.9 });
+}
+
+// ═════════════════════════════════════════════════════
+//  Canon / Sonnet 連携：同じ stories シートを使う統一スキーマ
+// ═════════════════════════════════════════════════════
+
+// ── Aria行一覧（H列ありの行を返す） ───────────────────
+function handleListAriaStories() {
+  if (!SPREADSHEET_ID) throw new Error('SPREADSHEET_ID が設定されていません');
+
+  const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = getOrCreateSheet(ss);
+  const rows  = sheet.getDataRange().getValues();
+
+  const stories = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const fullStory = String(r[7] || '').trim();
+    if (!fullStory) continue;
+    const hasJson = !!String(r[8] || '').trim();
+    stories.push({
+      rowNum:   i + 1,
+      savedAt:  r[0],
+      userName: r[1],
+      keywords: r[2],
+      synopsis: r[3],
+      preview:  fullStory.slice(0, 60),
+      hasJson:  hasJson,
+    });
+  }
+  stories.reverse();
+
+  return ContentService.createTextOutput(
+    JSON.stringify({ stories })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── Aria行詳細取得 ───────────────────────────────────
+function handleLoadAriaStory(body) {
+  if (!SPREADSHEET_ID) throw new Error('SPREADSHEET_ID が設定されていません');
+  const rowNum = parseInt(body.rowNum, 10);
+  if (!rowNum || rowNum < 2) throw new Error('rowNum が不正です');
+
+  const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = getOrCreateSheet(ss);
+  if (rowNum > sheet.getLastRow()) throw new Error('行が見つかりません: ' + rowNum);
+
+  const r = sheet.getRange(rowNum, 1, 1, 11).getValues()[0];
+  return ContentService.createTextOutput(JSON.stringify({
+    story: {
+      rowNum:    rowNum,
+      savedAt:   r[0],
+      userName:  r[1],
+      keywords:  r[2],
+      synopsis:  r[3],
+      charas:    r[4],
+      fullStory: r[7],
+      title:     r[9] || '',
+      genre:     r[10] || '',
+    }
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── Canon→JSON保存：rowNumあり=更新／なし=新規行 ──
+function handleSaveCanonJson(body) {
+  if (!SPREADSHEET_ID) throw new Error('SPREADSHEET_ID が設定されていません');
+
+  const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = getOrCreateSheet(ss);
+  const title = (body.title || '無題').trim();
+  const genre = (body.genre || '').trim();
+  const json  = JSON.stringify(body.storyData || {});
+
+  let rowNum = parseInt(body.rowNum, 10);
+  if (rowNum && rowNum >= 2 && rowNum <= sheet.getLastRow()) {
+    sheet.getRange(rowNum, 9, 1, 3).setValues([[json, title, genre]]);
+  } else {
+    const now = new Date().toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+    sheet.appendRow([now, '', '', '', '', '', '', '', json, title, genre]);
+    rowNum = sheet.getLastRow();
+  }
+
+  return ContentService.createTextOutput(
+    JSON.stringify({ success: true, rowNum, id: String(rowNum) })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── Sonnet用：JSONあり行一覧 ────────────────────────
+function handleListStories() {
+  if (!SPREADSHEET_ID) throw new Error('SPREADSHEET_ID が設定されていません');
+
+  const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = getOrCreateSheet(ss);
+  const rows  = sheet.getDataRange().getValues();
+
+  const stories = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const json = String(r[8] || '').trim();
+    if (!json) continue;
+    stories.push({
+      id:      String(i + 1),
+      rowNum:  i + 1,
+      savedAt: r[0],
+      title:   r[9] || '無題',
+      genre:   r[10] || '',
+    });
+  }
+  stories.reverse();
+
+  return ContentService.createTextOutput(
+    JSON.stringify({ stories })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── Sonnet用：JSON取得 ─────────────────────────────
+function handleLoadStory(body) {
+  if (!SPREADSHEET_ID) throw new Error('SPREADSHEET_ID が設定されていません');
+
+  const rowNum = parseInt(body.id || body.rowNum, 10);
+  if (!rowNum || rowNum < 2) throw new Error('id (rowNum) が不正です');
+
+  const ss    = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = getOrCreateSheet(ss);
+  if (rowNum > sheet.getLastRow()) throw new Error('行が見つかりません: ' + rowNum);
+
+  const json = sheet.getRange(rowNum, 9).getValue();
+  if (!json) throw new Error('この行にノベルJSONがありません: ' + rowNum);
+
+  let storyData;
+  try { storyData = JSON.parse(json); }
+  catch { throw new Error('ストーリーデータの解析に失敗しました'); }
+
+  return ContentService.createTextOutput(
+    JSON.stringify({ storyData })
+  ).setMimeType(ContentService.MimeType.JSON);
 }

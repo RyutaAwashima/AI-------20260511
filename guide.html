@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mythos — 使い方ガイド</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0b0b1a;
+      --bg2:     #11112a;
+      --bg3:     #181830;
+      --border:  #1e1e44;
+      --purple:  #7e57c2;
+      --purple2: #9575cd;
+      --blue:    #5c6bc0;
+      --teal:    #26a69a;
+      --amber:   #ffb300;
+      --red:     #ef5350;
+      --text:    #e4e6ff;
+      --muted:   #667;
+      --tag-bg:  rgba(126,87,194,0.18);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.75;
+      font-size: 15px;
+    }
+
+    /* ───────────── ヒーロー ───────────── */
+    .hero {
+      background: linear-gradient(160deg, #0f0f2e 0%, #1a0a2e 50%, #0b1a2e 100%);
+      text-align: center;
+      padding: 64px 24px 56px;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(126,87,194,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero .brand {
+      font-size: 11px;
+      letter-spacing: 0.35em;
+      color: var(--purple2);
+      text-transform: uppercase;
+      margin-bottom: 18px;
+      opacity: 0.9;
+    }
+    .hero h1 {
+      font-size: clamp(26px, 5vw, 42px);
+      font-weight: bold;
+      color: #d8dbff;
+      letter-spacing: 0.04em;
+      line-height: 1.3;
+      margin-bottom: 16px;
+    }
+    .hero h1 span { color: var(--purple2); }
+    .hero p {
+      font-size: 15px;
+      color: #778;
+      max-width: 520px;
+      margin: 0 auto 32px;
+    }
+
+    /* ───────────── フロー図 ───────────── */
+    .flow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      padding: 8px 8px 4px;
+    }
+    .flow-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .flow-box {
+      border-radius: 12px;
+      padding: 10px 20px;
+      font-size: 13.5px;
+      font-weight: bold;
+      letter-spacing: 0.04em;
+      text-align: center;
+      min-width: 90px;
+    }
+    .flow-box.aria   { background: rgba(92,107,192,0.25); border: 1.5px solid #5c6bc0; color: #9fa8da; }
+    .flow-box.canon  { background: rgba(126,87,194,0.25); border: 1.5px solid #7e57c2; color: #b39ddb; }
+    .flow-box.sonnet { background: rgba(38,166,154,0.2);  border: 1.5px solid #26a69a; color: #80cbc4; }
+    .flow-box.sheets { background: rgba(38,166,74,0.15);  border: 1.5px solid #2e7d32; color: #81c784; }
+    .flow-label { font-size: 10.5px; color: var(--muted); }
+    .flow-arrow {
+      font-size: 20px;
+      color: #2a2a50;
+      margin: 0 4px;
+      flex-shrink: 0;
+      padding-bottom: 18px;
+    }
+
+    /* ───────────── メインレイアウト ───────────── */
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 20px 80px;
+    }
+
+    /* ───────────── セクションヘッダー ───────────── */
+    .section-head {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin: 52px 0 24px;
+    }
+    .section-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    .section-icon.aria   { background: rgba(92,107,192,0.2); }
+    .section-icon.canon  { background: rgba(126,87,194,0.2); }
+    .section-icon.sonnet { background: rgba(38,166,154,0.18); }
+    .section-icon.setup  { background: rgba(255,179,0,0.15); }
+    .section-meta { flex: 1; }
+    .section-meta .tag {
+      display: inline-block;
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      color: var(--purple2);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .section-meta h2 { font-size: 21px; color: #d8dbff; font-weight: bold; }
+    .section-meta p  { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+    /* ───────────── ステップカード ───────────── */
+    .steps { display: flex; flex-direction: column; gap: 14px; }
+
+    .step-card {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 0 16px;
+      align-items: start;
+    }
+    .step-num {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      font-weight: bold;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-num.aria   { background: rgba(92,107,192,0.25); color: #9fa8da; border: 1.5px solid #5c6bc0; }
+    .step-num.canon  { background: rgba(126,87,194,0.25); color: #b39ddb; border: 1.5px solid #7e57c2; }
+    .step-num.sonnet { background: rgba(38,166,154,0.2);  color: #80cbc4; border: 1.5px solid #26a69a; }
+    .step-num.setup  { background: rgba(255,179,0,0.15);  color: #ffca28; border: 1.5px solid #ffb300; }
+
+    .step-body h3   { font-size: 15px; font-weight: bold; color: #d0d4ff; margin-bottom: 5px; }
+    .step-body p    { font-size: 13.5px; color: #99a; line-height: 1.7; }
+    .step-body ul   { padding-left: 18px; margin-top: 6px; }
+    .step-body li   { font-size: 13px; color: #99a; line-height: 1.8; }
+    .step-body code {
+      background: #0d0d20;
+      border: 1px solid #2a2a50;
+      border-radius: 5px;
+      padding: 1px 7px;
+      font-size: 12.5px;
+      color: #c5caf7;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+
+    /* ───────────── ヒント・注意 ───────────── */
+    .callout {
+      border-radius: 10px;
+      padding: 13px 16px;
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.7;
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .callout.tip   { background: rgba(38,166,154,0.1);  border: 1px solid rgba(38,166,154,0.3);  color: #80cbc4; }
+    .callout.warn  { background: rgba(255,179,0,0.08);  border: 1px solid rgba(255,179,0,0.25);  color: #ffca28; }
+    .callout.info  { background: rgba(126,87,194,0.1);  border: 1px solid rgba(126,87,194,0.3);  color: #b39ddb; }
+    .callout.error { background: rgba(239,83,80,0.08);  border: 1px solid rgba(239,83,80,0.25);  color: #ef9a9a; }
+    .callout-icon  { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .callout p     { margin: 0; }
+
+    /* ───────────── 全体フロー俯瞰 ───────────── */
+    .bigflow {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      margin: 28px 0 0;
+    }
+    .bigflow h3 {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .bigflow-row {
+      display: grid;
+      grid-template-columns: 1fr 40px 1fr 40px 1fr;
+      gap: 10px;
+      align-items: stretch;
+    }
+    @media (max-width: 620px) {
+      .bigflow-row { grid-template-columns: 1fr; }
+      .bigflow-arrow { transform: rotate(90deg); }
+    }
+    .bigflow-box {
+      border-radius: 12px;
+      padding: 16px 14px;
+      text-align: center;
+    }
+    .bigflow-box.aria   { background: rgba(92,107,192,0.12); border: 1px solid rgba(92,107,192,0.35); }
+    .bigflow-box.canon  { background: rgba(126,87,194,0.12); border: 1px solid rgba(126,87,194,0.35); }
+    .bigflow-box.sonnet { background: rgba(38,166,154,0.1);  border: 1px solid rgba(38,166,154,0.3); }
+    .bigflow-box .label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .bigflow-box.aria .label   { color: #5c6bc0; }
+    .bigflow-box.canon .label  { color: #7e57c2; }
+    .bigflow-box.sonnet .label { color: #26a69a; }
+    .bigflow-box .name { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
+    .bigflow-box.aria .name   { color: #9fa8da; }
+    .bigflow-box.canon .name  { color: #b39ddb; }
+    .bigflow-box.sonnet .name { color: #80cbc4; }
+    .bigflow-box .desc { font-size: 12px; color: var(--muted); line-height: 1.65; }
+    .bigflow-box .feat {
+      margin-top: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+    }
+    .bigflow-box .feat span {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 2px 9px;
+      font-size: 10.5px;
+      color: #99a;
+    }
+    .bigflow-arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #2a2a50;
+      font-size: 24px;
+    }
+
+    /* ───────────── Sheets 保存フロー補足 ───────────── */
+    .mini-flow {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .mini-box {
+      border-radius: 8px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .mini-box.a { background: rgba(92,107,192,0.2); border: 1px solid #5c6bc0; color: #9fa8da; }
+    .mini-box.b { background: rgba(255,152,0,0.15); border: 1px solid #f57c00; color: #ffcc80; }
+    .mini-box.c { background: rgba(38,166,74,0.15); border: 1px solid #2e7d32; color: #81c784; }
+    .mini-box.d { background: rgba(38,166,154,0.15);border: 1px solid #00796b; color: #80cbc4; }
+    .mini-arrow { color: #2a2a50; font-size: 16px; }
+
+    /* ───────────── トラブルシュート表 ───────────── */
+    .trouble-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    .trouble-table th, .trouble-table td {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      vertical-align: top;
+    }
+    .trouble-table th {
+      background: var(--bg3);
+      color: #889;
+      font-weight: bold;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+    }
+    .trouble-table td:first-child { color: var(--red); font-weight: bold; }
+    .trouble-table td:last-child  { color: #9fa8da; }
+    .trouble-table tr:nth-child(even) td { background: rgba(255,255,255,0.01); }
+
+    /* ───────────── URL カード ───────────── */
+    .url-card {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-top: 10px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      font-size: 12.5px;
+      color: #9fa8da;
+      word-break: break-all;
+      line-height: 1.6;
+    }
+    .url-card .url-label {
+      font-family: 'Hiragino Kaku Gothic ProN', sans-serif;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 5px;
+      letter-spacing: 0.08em;
+    }
+
+    /* ───────────── ナビ ───────────── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(11,11,26,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .nav::-webkit-scrollbar { display: none; }
+    .nav a {
+      flex-shrink: 0;
+      text-decoration: none;
+      color: var(--muted);
+      font-size: 12.5px;
+      padding: 12px 18px;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      white-space: nowrap;
+    }
+    .nav a:hover { color: #ccd; }
+    .nav a.aria:hover, .nav a.aria.active   { color: #9fa8da; border-bottom-color: #5c6bc0; }
+    .nav a.canon:hover, .nav a.canon.active { color: #b39ddb; border-bottom-color: #7e57c2; }
+    .nav a.sonnet:hover,.nav a.sonnet.active{ color: #80cbc4; border-bottom-color: #26a69a; }
+    .nav a.setup:hover, .nav a.setup.active { color: #ffca28; border-bottom-color: #ffb300; }
+
+    /* ───────────── セパレーター ───────────── */
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0 0;
+    }
+
+    /* ──────────────────── アプリ起動カード ──────────────────── */
+    .launch-grid {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 28px;
+    }
+    .launch-card {
+      display: block;
+      text-decoration: none;
+      border-radius: 14px;
+      padding: 18px 22px;
+      min-width: 140px;
+      flex: 1;
+      max-width: 210px;
+      transition: transform 0.15s, box-shadow 0.15s;
+      text-align: center;
+    }
+    .launch-card:hover { transform: translateY(-4px); }
+    .launch-card .lc-icon { font-size: 28px; display: block; margin-bottom: 8px; }
+    .launch-card .lc-name { font-size: 17px; font-weight: bold; margin-bottom: 4px; }
+    .launch-card .lc-desc { font-size: 11.5px; line-height: 1.55; opacity: 0.85; }
+    .launch-card.aria   { background: rgba(92,107,192,0.18); border: 1.5px solid #5c6bc0; color: #9fa8da; }
+    .launch-card.canon  { background: rgba(126,87,194,0.18); border: 1.5px solid #7e57c2; color: #b39ddb; }
+    .launch-card.sonnet { background: rgba(38,166,154,0.15); border: 1.5px solid #26a69a; color: #80cbc4; }
+    .launch-card.aria:hover   { box-shadow: 0 8px 28px rgba(92,107,192,0.35); }
+    .launch-card.canon:hover  { box-shadow: 0 8px 28px rgba(126,87,194,0.35); }
+    .launch-card.sonnet:hover { box-shadow: 0 8px 28px rgba(38,166,154,0.3); }
+    .hero-note {
+      font-size: 11px;
+      color: #445;
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    /* ──────────────────── ロードマップ ──────────────────── */
+    .roadmap { display: flex; flex-direction: column; gap: 12px; }
+    .roadmap-phase {
+      border-radius: 12px;
+      padding: 16px 20px;
+      display: grid;
+      grid-template-columns: 90px 1fr;
+      gap: 0 16px;
+      align-items: start;
+    }
+    .roadmap-phase.ph-now  { background: rgba(38,166,154,0.08);  border: 1px solid rgba(38,166,154,0.35); }
+    .roadmap-phase.ph-near { background: rgba(92,107,192,0.08);  border: 1px solid rgba(92,107,192,0.3); }
+    .roadmap-phase.ph-mid  { background: rgba(126,87,194,0.08);  border: 1px solid rgba(126,87,194,0.25); }
+    .roadmap-phase.ph-far  { background: rgba(255,179,0,0.06);   border: 1px solid rgba(255,179,0,0.2); }
+    .roadmap-phase.ph-saas { background: rgba(239,83,80,0.06);   border: 1px solid rgba(239,83,80,0.18); }
+    .roadmap-badge { text-align: center; }
+    .roadmap-badge .ph-label { font-size: 10px; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 2px; }
+    .roadmap-badge .ph-icon  { font-size: 24px; display: block; margin: 4px 0; }
+    .roadmap-badge .ph-name  { font-size: 11px; font-weight: bold; }
+    .ph-now  .ph-name { color: #80cbc4; }
+    .ph-near .ph-name { color: #9fa8da; }
+    .ph-mid  .ph-name { color: #b39ddb; }
+    .ph-far  .ph-name { color: #ffca28; }
+    .ph-saas .ph-name { color: #ef9a9a; }
+    .roadmap-body h3 { font-size: 14.5px; font-weight: bold; color: #d0d4ff; margin-bottom: 5px; }
+    .roadmap-body p  { font-size: 13px; color: #99a; line-height: 1.7; }
+    .roadmap-body ul { padding-left: 18px; margin-top: 5px; }
+    .roadmap-body li { font-size: 12.5px; color: #99a; line-height: 1.8; }
+
+    /* ──────────────────── マルチデバイス ──────────────────── */
+    .install-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .install-step {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 0 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .install-step:last-child { border-bottom: none; }
+    .install-num {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: rgba(92,107,192,0.2);
+      border: 1.5px solid #5c6bc0;
+      color: #9fa8da;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: bold; flex-shrink: 0; margin-top: 2px;
+    }
+    .install-body h4 { font-size: 14px; font-weight: bold; color: #d0d4ff; margin-bottom: 4px; }
+    .install-body p  { font-size: 13px; color: #99a; line-height: 1.7; }
+    .install-body code {
+      background: #0d0d20; border: 1px solid #2a2a50; border-radius: 5px;
+      padding: 1px 7px; font-size: 12.5px; color: #c5caf7;
+      font-family: 'Consolas', 'Monaco', monospace;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ナビ -->
+<nav class="nav">
+  <a href="#overview">概要</a>
+  <a href="#aria" class="aria">📝 Aria</a>
+  <a href="#canon" class="canon">📜 Canon</a>
+  <a href="#sonnet" class="sonnet">🎮 Sonnet</a>
+  <a href="#fullflow">全体フロー</a>
+  <a href="#trouble">トラブル対処</a>
+  <a href="#setup" class="setup">⚙️ 設定</a>
+  <a href="#multidevice" class="setup">💻 複数端末</a>
+  <a href="#roadmap">🗺 計画</a>
+</nav>
+
+<!-- ヒーロー -->
+<div class="hero">
+  <div class="brand">Mythos Project — 使い方ガイド</div>
+  <h1>AIで物語を作ろう<br><span>Mythos の使い方</span></h1>
+  <p>Aria でアイデアを生成し、Canon でノベルゲームに変換、Sonnet でプレイする——3ステップで自分だけの物語が完成します。</p>
+
+  <!-- ミニフロー -->
+  <div class="flow">
+    <div class="flow-node">
+      <div class="flow-box aria">📝 Aria</div>
+      <div class="flow-label">アイデア生成</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="flow-box canon">📜 Canon</div>
+      <div class="flow-label">ノベル化</div>
+    </div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-node">
+      <div class="flow-box sonnet">🎮 Sonnet</div>
+      <div class="flow-label">プレイ</div>
+    </div>
+    <div class="flow-arrow" style="color:#2a3a28;">→</div>
+    <div class="flow-node">
+      <div class="flow-box sheets">📊 Sheets</div>
+      <div class="flow-label">記録・保存</div>
+    </div>
+  </div>
+
+  <!-- アプリ起動 -->
+  <div class="launch-grid">
+    <a class="launch-card aria" href="aria/index.html">
+      <span class="lc-icon">📝</span>
+      <div class="lc-name">Aria</div>
+      <div class="lc-desc">ストーリー生成<br>スプシ保存</div>
+    </a>
+    <a class="launch-card canon" href="canon/index.html">
+      <span class="lc-icon">📜</span>
+      <div class="lc-name">Canon</div>
+      <div class="lc-desc">ノベル化エディター<br>JSON変換</div>
+    </a>
+    <a class="launch-card sonnet" href="sonnet/index.html">
+      <span class="lc-icon">🎮</span>
+      <div class="lc-name">Sonnet</div>
+      <div class="lc-desc">ノベルゲームエンジン<br>スプシ読み込み対応</div>
+    </a>
+  </div>
+  <p class="hero-note">* 各リンクは同じフォルダ内の HTML ファイルを直接開きます（サーバー不要）</p>
+</div>
+
+<!-- メインコンテンツ -->
+<div class="wrap">
+
+  <!-- ─────────── 概要 ─────────── -->
+  <div id="overview">
+    <div class="section-head" style="margin-top:40px;">
+      <div class="section-icon setup" style="font-size:28px;">🗺️</div>
+      <div class="section-meta">
+        <div class="tag">Overview</div>
+        <h2>3つのツールの役割</h2>
+        <p>Mythos は Aria・Canon・Sonnet の3アプリで構成されています</p>
+      </div>
+    </div>
+
+    <div class="bigflow">
+      <h3>System Overview</h3>
+      <div class="bigflow-row">
+        <div class="bigflow-box aria">
+          <div class="label">Step 1</div>
+          <div class="name">📝 Aria</div>
+          <div class="desc">キーワードを選んでAIにあらすじを作ってもらう<br>ストーリーの種を生むアプリ</div>
+          <div class="feat">
+            <span>キーワード選択</span>
+            <span>あらすじ生成</span>
+            <span>Sheets保存</span>
+          </div>
+        </div>
+        <div class="bigflow-arrow">→</div>
+        <div class="bigflow-box canon">
+          <div class="label">Step 2</div>
+          <div class="name">📜 Canon</div>
+          <div class="desc">テキストをノベルゲームのJSONに変換するエディター<br>キャラ抽出・背景BGM設定まで担当</div>
+          <div class="feat">
+            <span>キャラ抽出</span>
+            <span>背景・BGM選択</span>
+            <span>☁️ Sheets保存</span>
+          </div>
+        </div>
+        <div class="bigflow-arrow">→</div>
+        <div class="bigflow-box sonnet">
+          <div class="label">Step 3</div>
+          <div class="name">🎮 Sonnet</div>
+          <div class="desc">ノベルゲームエンジン<br>作ったJSONをロードして実際にプレイできる</div>
+          <div class="feat">
+            <span>サウンドノベル再生</span>
+            <span>選択肢</span>
+            <span>☁️ Sheets読み込み</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout info" style="margin-top:16px;">
+      <div class="callout-icon">💡</div>
+      <p><strong>AriaとCanonは独立して使えます。</strong>Ariaで出力したあらすじをCanonに貼ればフル連携できますが、自分で書いた小説や他のAIで作った文章をCanonに入れることもできます。</p>
+    </div>
+  </div>
+
+  <!-- ─────────── Aria ─────────── -->
+  <hr class="divider">
+  <div id="aria">
+    <div class="section-head">
+      <div class="section-icon aria">📝</div>
+      <div class="section-meta">
+        <div class="tag">Aria — Story Generator</div>
+        <h2>Aria の使い方</h2>
+        <p>キーワードを選んでAIにあらすじと世界観を生成してもらうアプリ</p>
+      </div>
+    </div>
+
+    <div class="steps">
+
+      <div class="step-card">
+        <div class="step-num aria">1</div>
+        <div class="step-body">
+          <h3>名前を入力する</h3>
+          <p>ページ上部の「あなたの名前」欄に自分の名前を入力します。この名前はGoogleスプレッドシートに記録されます（本名でなくニックネームでもOK）。</p>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num aria">2</div>
+        <div class="step-body">
+          <h3>キーワードを選ぶ</h3>
+          <p>ジャンル・舞台・テーマ・主人公・雰囲気のカテゴリから、気になるキーワードをクリックして選択します。選んだキーワードがハイライトされます。</p>
+          <ul>
+            <li>各カテゴリで<strong>1つ以上</strong>選ぶとAIの出力が安定します</li>
+            <li>複数選択OK。組み合わせが物語の個性になります</li>
+            <li>迷ったら「おまかせ」ボタンでランダム選択できます</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num aria">3</div>
+        <div class="step-body">
+          <h3>「あらすじを生成する」をタップ</h3>
+          <p>ボタンを押すとGemini AIがあらすじ・登場人物・世界観を生成します。生成には<strong>10〜30秒</strong>かかることがあります。</p>
+          <div class="callout tip" style="margin-top:8px;">
+            <div class="callout-icon">⏱</div>
+            <p>スピナーが回っている間は画面を閉じないでください。途中で閉じると生成結果が失われます。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num aria">4</div>
+        <div class="step-body">
+          <h3>結果を確認・編集する</h3>
+          <p>あらすじ・登場人物・世界観の3ブロックで結果が表示されます。内容が気に入らなければ「もう一度生成」ボタンで再生成できます。テキストエリアを直接編集することも可能です。</p>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num aria">5</div>
+        <div class="step-body">
+          <h3>Googleスプレッドシートに保存する</h3>
+          <p>「スプレッドシートに保存」ボタンで結果を記録します。授業終了後に先生が一覧確認できます。</p>
+          <div class="mini-flow">
+            <div class="mini-box a">Aria</div>
+            <div class="mini-arrow">→</div>
+            <div class="mini-box b">GAS（プロキシ）</div>
+            <div class="mini-arrow">→</div>
+            <div class="mini-box c">Googleスプレッドシート</div>
+          </div>
+          <div class="callout warn" style="margin-top:10px;">
+            <div class="callout-icon">⚠️</div>
+            <p>保存ボタンはあらすじ生成後に有効になります。名前が空欄だと保存できません。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num aria">6</div>
+        <div class="step-body">
+          <h3>CanonへコピーしてノベルゲームにするのもOK（任意）</h3>
+          <p>「コピー」ボタンで生成テキストをクリップボードにコピーし、Canon の「本文」欄に貼り付けることで、そのままノベルゲームに変換できます。</p>
+        </div>
+      </div>
+
+    </div><!-- /steps -->
+  </div><!-- /aria -->
+
+  <!-- ─────────── Canon ─────────── -->
+  <hr class="divider">
+  <div id="canon">
+    <div class="section-head">
+      <div class="section-icon canon">📜</div>
+      <div class="section-meta">
+        <div class="tag">Canon — Novel Editor</div>
+        <h2>Canon の使い方</h2>
+        <p>テキストを4ステップでノベルゲームJSON に変換するエディター</p>
+      </div>
+    </div>
+
+    <div class="steps">
+
+      <div class="step-card">
+        <div class="step-num canon">1</div>
+        <div class="step-body">
+          <h3>STEP 1 — 原稿を入力する</h3>
+          <p>タイトル・ジャンルを入力し、本文テキストエリアに変換したい文章を貼り付けます。</p>
+          <ul>
+            <li>推奨文字数は <strong>500〜2000文字</strong></li>
+            <li>Ariaの生成結果・自作小説・読書感想文など何でもOK</li>
+            <li>「サンプル」ボタンで羅生門・走れメロスなどを試せます</li>
+          </ul>
+          <div class="callout warn" style="margin-top:8px;">
+            <div class="callout-icon">⚠️</div>
+            <p>2000文字を大きく超えると変換に失敗しやすくなります。長い場合は前半だけ貼るなど工夫してください。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num canon">2</div>
+        <div class="step-body">
+          <h3>「登場人物を抽出する」をタップ</h3>
+          <p>AIがテキストから主要人物を最大4名まで自動抽出します。<br>抽出後は STEP 2 の「キャラクター確認・調整」が開きます。</p>
+          <ul>
+            <li>名前をクリックして変更できます</li>
+            <li>色のサークルをクリックするとカラーピッカーが開きます（セリフの名前色になります）</li>
+            <li>立ち位置（左／右）でキャラが画面のどちら側に表示されるか決まります</li>
+            <li>「＋ キャラクターを追加」でキャラを増やせます</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num canon">3</div>
+        <div class="step-body">
+          <h3>STEP 3 — 背景・BGMを選ぶ</h3>
+          <p>STEP 2 が完了すると STEP 3 が開きます。チップをクリックして、物語に合う背景とBGMを選びます（複数選択OK）。</p>
+          <ul>
+            <li><strong>背景</strong>：教室・廃校・屋上・森・宇宙船など 14 種類</li>
+            <li><strong>BGM</strong>：不気味・切ない・コミカル・緊張など 9 種類</li>
+            <li>選んだ候補をAIがシーンに合わせて割り当てます</li>
+          </ul>
+          <p style="margin-top:8px;">選んだら「🎼 ノベルJSONに変換する」をタップ。<strong>30秒〜1分</strong>ほどかかることがあります。</p>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num canon">4</div>
+        <div class="step-body">
+          <h3>STEP 4 — JSONをダウンロードする</h3>
+          <p>変換結果のJSONプレビューが表示されます。</p>
+          <ul>
+            <li>「💾 .json をダウンロード」でファイルを保存</li>
+            <li>「📋 コピー」でクリップボードにコピーも可能</li>
+          </ul>
+          <div class="callout tip" style="margin-top:8px;">
+            <div class="callout-icon">💡</div>
+            <p>ダウンロードしたファイルを <code>stories/</code> フォルダに入れて <code>sonnet/stories.js</code> に読み込ませるとSonnetで遊べます（詳細は「全体フロー」を参照）。</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /steps -->
+  </div><!-- /canon -->
+
+  <!-- ─────────── Sonnet ─────────── -->
+  <hr class="divider">
+  <div id="sonnet">
+    <div class="section-head">
+      <div class="section-icon sonnet">🎮</div>
+      <div class="section-meta">
+        <div class="tag">Sonnet — Novel Engine</div>
+        <h2>Sonnet の使い方</h2>
+        <p>サウンドノベルエンジン。作ったストーリーや組み込みサンプルをプレイできます</p>
+      </div>
+    </div>
+
+    <div class="steps">
+
+      <div class="step-card">
+        <div class="step-num sonnet">1</div>
+        <div class="step-body">
+          <h3>タイトル画面でストーリーを選ぶ</h3>
+          <p>Sonnet を開くとタイトル画面が表示されます。収録されているストーリーの一覧からプレイしたいものを選んでクリック/タップします。</p>
+          <div class="callout info" style="margin-top:8px;">
+            <div class="callout-icon">📖</div>
+            <p>初期収録は3本：<strong>廃校の約束</strong>（ホラー）・<strong>今日も放課後はカオスです</strong>（学園コメディ）・<strong>ZERO PROTOCOL</strong>（近未来シリアス）</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num sonnet">2</div>
+        <div class="step-body">
+          <h3>クリック or タップで読み進める</h3>
+          <p>画面をクリックまたはタップするとテキストが進みます。</p>
+          <ul>
+            <li><strong>選択肢</strong>が出たらボタンをクリックして選んでください</li>
+            <li>右上の <code>♪</code> ボタンでBGMのオン・オフを切り替えられます</li>
+            <li>ゲームエリア外のボタンで画面サイズプレビューを切り替えられます</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num sonnet">3</div>
+        <div class="step-body">
+          <h3>エンディング後にタイトルへ戻る</h3>
+          <p>エンディングに到達すると「タイトルに戻る」ボタンが表示されます。タップするとストーリー選択画面に戻って別の作品を選べます。</p>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num sonnet">4</div>
+        <div class="step-body">
+          <h3>（上級）Canonで作ったJSONを追加する</h3>
+          <p>Canonでダウンロードした <code>.json</code> ファイルを <code>stories/</code> フォルダに置き、<code>sonnet/stories.js</code> の先頭の配列にファイルパスを追記することで自作ストーリーをプレイできます。</p>
+          <div class="callout warn" style="margin-top:8px;">
+            <div class="callout-icon">⚠️</div>
+            <p>ファイルをダブルクリックで直接開く場合（<code>file://</code> プロトコル）は、ローカルファイルの読み込み制限があるため <code>stories.js</code> へのインライン埋め込みが必要です。HTTPサーバー経由で開けば通常のJSONロードが使えます。</p>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /steps -->
+  </div><!-- /sonnet -->
+
+  <!-- ─────────── 全体フロー ─────────── -->
+  <hr class="divider">
+  <div id="fullflow">
+    <div class="section-head">
+      <div class="section-icon setup" style="font-size:24px;">🔗</div>
+      <div class="section-meta">
+        <div class="tag">Full Flow</div>
+        <h2>Aria → Canon → Sonnet 全体フロー</h2>
+        <p>スプレッドシートを中継して3アプリをシームレスに連携する手順</p>
+      </div>
+    </div>
+
+    <div class="callout info" style="margin-bottom:20px;">
+      <div class="callout-icon">☁️</div>
+      <p><strong>新しい連携フロー（推奨）</strong>：Aria・Canon・Sonnet はすべて同じ Google スプレッドシートをハブとして使います。コピー&amp;ペーストなしでアプリ間でデータをやり取りできます。</p>
+    </div>
+
+    <div class="steps">
+
+      <div class="step-card">
+        <div class="step-num setup">①</div>
+        <div class="step-body">
+          <h3>Aria でストーリーを紡いでスプシに保存</h3>
+          <p>キーワードを選択 → あらすじ生成 → ストーリー生成 → 「☁ 保存」ボタンでスプシに書き込み</p>
+          <div class="mini-flow">
+            <div class="mini-box a">キーワード選択</div>
+            <div class="mini-arrow">→</div>
+            <div class="mini-box b">Gemini 生成</div>
+            <div class="mini-arrow">→</div>
+            <div class="mini-box c">📊 Sheets 保存</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num setup">②</div>
+        <div class="step-body">
+          <h3>Canon で「Aria の物語一覧」から読み込む</h3>
+          <p>Canon の STEP 1 にある「📋 Aria の物語一覧を読み込む」ボタンを押すと、スプシに保存された Aria の作品リストが表示されます。読み込みたい行をクリックするとテキストが自動セットされます。</p>
+          <div class="mini-flow">
+            <div class="mini-box c">📊 Sheets 読み込み</div>
+            <div class="mini-arrow">→</div>
+            <div class="mini-box b">キャラ抽出</div>
+            <div class="mini-arrow">→</div>
+            <div class="mini-box d">JSON 変換</div>
+          </div>
+          <div class="callout info" style="margin-top:8px;">
+            <div class="callout-icon">💡</div>
+            <p>変換済みの作品には「変換済」バッジが表示されます。自分で書いたテキストを直接入力することも引き続き可能です。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num setup">③</div>
+        <div class="step-body">
+          <h3>Canon でクラウド保存 → Sonnet でスプシから読み込んで遊ぶ</h3>
+          <p>STEP 4 の「☁ Sonnet 用にクラウド保存」ボタンを押すとノベル JSON がスプシに保存されます。<br>あとは Sonnet のタイトル画面で「☁ スプシからストーリーを読み込む」を選ぶだけでプレイできます。</p>
+          <div class="mini-flow">
+            <div class="mini-box d">📊 Sheets 保存</div>
+            <div class="mini-arrow">→</div>
+            <div class="mini-box e">🎮 Sonnet</div>
+            <div class="mini-arrow">→</div>
+            <div class="mini-box c">☁ ロードしてプレイ</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="callout warn" style="margin-top:16px;">
+      <div class="callout-icon">📌</div>
+      <p><strong>ローカルファイルとして使う場合の注意：</strong>Canon で「ダウンロード」したJSONを Sonnet の <code>stories/</code> フォルダに入れる従来の方法も引き続き使えます。ただしスプシ連携の方が端末間での共有が簡単です。</p>
+    </div>
+  </div>
+
+  <!-- ─────────── トラブルシュート ─────────── -->
+  <hr class="divider">
+  <div id="trouble">
+    <div class="section-head">
+      <div class="section-icon setup" style="font-size:26px;">🔧</div>
+      <div class="section-meta">
+        <div class="tag">Troubleshooting</div>
+        <h2>よくあるトラブルと対処法</h2>
+        <p>エラーが出たときはここを確認してください</p>
+      </div>
+    </div>
+
+    <table class="trouble-table">
+      <thead>
+        <tr>
+          <th style="width:30%">症状</th>
+          <th>原因と対処</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>「Failed to fetch」「通信エラー」と表示される</td>
+          <td>GASのデプロイURLが正しいか確認。または一時的なGASの不具合なので少し待ってから再試行してください。</td>
+        </tr>
+        <tr>
+          <td>「GEMINI_API_KEY が設定されていません」</td>
+          <td>GASのスクリプトプロパティに <code>GEMINI_API_KEY</code> が設定されていません。GASプロジェクトの「プロジェクトの設定」→「スクリプトプロパティ」から追加してください。</td>
+        </tr>
+        <tr>
+          <td>Gemini API エラー (HTTP 404)</td>
+          <td>モデル名が間違っています。gas_proxy.gs の <code>GEMINI_ENDPOINT</code> が <code>gemini-2.5-flash-lite</code> になっているか確認し、再デプロイしてください。</td>
+        </tr>
+        <tr>
+          <td>保存ボタンを押しても何も起きない</td>
+          <td>名前欄が空欄か、あらすじが未生成の可能性があります。また <code>SPREADSHEET_ID</code> スクリプトプロパティが未設定の場合も失敗します。</td>
+        </tr>
+        <tr>
+          <td>Canon でキャラが1人も抽出されない</td>
+          <td>テキストに台詞や登場人物の描写が少なすぎます。会話文を含む500文字以上のテキストを使ってください。</td>
+        </tr>
+        <tr>
+          <td>Canon でJSON変換が失敗する（エラー表示）</td>
+          <td>テキストが長すぎるか、AIがJSONフォーマットを守れなかった可能性があります。テキストを短くして再試行するか、「↩ 最初から」でリセットしてください。</td>
+        </tr>
+        <tr>
+          <td>Sonnet でBGMが鳴らない</td>
+          <td>ブラウザの自動再生ポリシーにより、最初の画面クリック前は音が出ません。ゲーム画面をクリックして操作を開始してください。右上の ♪ ボタンでオン/オフを確認することもできます。</td>
+        </tr>
+        <tr>
+          <td>タイトルに戻ると次のストーリーが始まらない</td>
+          <td>ページをリロード（F5）してから再選択してください。</td>
+        </tr>
+        <tr>
+          <td>GASへのアクセスで認証画面が表示される</td>
+          <td>デプロイ設定の「アクセスできるユーザー」が「全員」になっているか確認してください。「自分のみ」だとログイン画面が返ってきます。</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ─────────── セットアップ ─────────── -->
+  <hr class="divider">
+  <div id="setup">
+    <div class="section-head">
+      <div class="section-icon setup">⚙️</div>
+      <div class="section-meta">
+        <div class="tag">Setup — 管理者向け</div>
+        <h2>初期セットアップ手順</h2>
+        <p>GAS・APIキー・スプレッドシートの設定（先生・管理者が行う作業）</p>
+      </div>
+    </div>
+
+    <div class="steps">
+
+      <div class="step-card">
+        <div class="step-num setup">S1</div>
+        <div class="step-body">
+          <h3>Google Apps Script プロジェクトを作成</h3>
+          <p><a href="https://script.google.com/" target="_blank" style="color:#9575cd;">script.google.com</a> を開き、「新しいプロジェクト」を作成。<code>aria/gas_proxy.gs</code> の内容を全コピーして貼り付けます。</p>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num setup">S2</div>
+        <div class="step-body">
+          <h3>スクリプトプロパティを設定</h3>
+          <p>GASエディタの「プロジェクトの設定」→「スクリプトプロパティ」→「プロパティを追加」</p>
+          <ul>
+            <li><code>GEMINI_API_KEY</code> ：Gemini APIキー（<a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:#9575cd;">Google AI Studio</a> で取得）</li>
+            <li><code>SPREADSHEET_ID</code>：保存先スプレッドシートのID（URLの <code>/d/xxxxx/edit</code> の <code>xxxxx</code> 部分）</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num setup">S3</div>
+        <div class="step-body">
+          <h3>ウェブアプリとしてデプロイ</h3>
+          <p>「デプロイ」→「新しいデプロイ」→「ウェブアプリ」を選択</p>
+          <ul>
+            <li>実行するユーザー：<strong>自分</strong></li>
+            <li>アクセスできるユーザー：<strong>全員</strong></li>
+          </ul>
+          <p style="margin-top:6px;">デプロイ後のURLをコピーし、<code>aria/index.html</code> と <code>canon/index.html</code> の <code>CONFIG.GAS_URL</code> に貼り付けます。</p>
+          <div class="callout warn" style="margin-top:8px;">
+            <div class="callout-icon">⚠️</div>
+            <p><strong>既存デプロイを更新する場合</strong>：「デプロイを管理」→「鉛筆アイコン」→「バージョン：新しいバージョン」を選択してデプロイしてください。URLは変わりません。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="step-card">
+        <div class="step-num setup">S4</div>
+        <div class="step-body">
+          <h3>疎通確認</h3>
+          <p>ブラウザで以下のURLにアクセスし、JSONレスポンスが返ってくれば成功です。</p>
+          <div class="url-card">
+            <div class="url-label">GAS疎通確認URL（ブラウザで開く）</div>
+            https://script.google.com/macros/s/<strong>[デプロイID]</strong>/exec
+          </div>
+          <div class="url-card" style="margin-top:8px;">
+            <div class="url-label">期待されるレスポンス</div>
+            {"status":"ok","message":"GAS proxy is running"}
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="callout info" style="margin-top:20px;">
+      <div class="callout-icon">📌</div>
+      <p>現在設定済みのGAS URL：<code>https://script.google.com/macros/s/AKfycbzdSAoFA7G9ByUdbQDqDIUcDTn4iCI-vhD37BSJFK2CMzO7awdY_kz1j3SZdjnW8eXv/exec</code></p>
+    </div>
+
+  </div><!-- /setup -->
+
+  <!-- ─────────── 複数端末インストール ─────────── -->
+  <hr class="divider">
+  <div id="multidevice">
+    <div class="section-head">
+      <div class="section-icon setup" style="font-size:26px;">💻</div>
+      <div class="section-meta">
+        <div class="tag">Multi Device — 複数端末セットアップ</div>
+        <h2>複数の端末で使うには</h2>
+        <p>リポジトリをクローンして同じ GAS URL を設定するだけ。スプシが共有ハブになります</p>
+      </div>
+    </div>
+
+    <div class="install-steps">
+
+      <div class="install-step">
+        <div class="install-num">1</div>
+        <div class="install-body">
+          <h4>Git でリポジトリをクローン</h4>
+          <p>新しい端末でターミナル（または Git Bash）を開き、以下のコマンドを実行します。</p>
+          <div class="url-card" style="margin-top:8px;">
+            <div class="url-label">ターミナル</div>
+            git clone https://github.com/RyutaAwashima/AI-------20260511.git<br>
+            cd AI-------20260511
+          </div>
+          <p style="margin-top:8px;font-size:12.5px;color:#778;">Git が入っていない場合は <a href="https://git-scm.com/" target="_blank" style="color:#9575cd;">git-scm.com</a> からインストールしてください。または ZIP でダウンロードして展開しても OK です。</p>
+        </div>
+      </div>
+
+      <div class="install-step">
+        <div class="install-num">2</div>
+        <div class="install-body">
+          <h4>GAS URL を 3 ファイルに設定</h4>
+          <p>以下の 3 箇所を開いて、<strong>GAS デプロイ URL</strong> を貼り付けます（同じ URL を 3 ファイルすべてに設定してください）。</p>
+          <table class="trouble-table" style="margin-top:10px;">
+            <thead><tr><th>ファイル</th><th>設定箇所</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><code>aria/index.html</code></td>
+                <td>約554行目：<code>CONFIG.GAS_URL = '...'</code></td>
+              </tr>
+              <tr>
+                <td><code>canon/index.html</code></td>
+                <td>約443行目：<code>CONFIG.GAS_URL = '...'</code></td>
+              </tr>
+              <tr>
+                <td><code>sonnet/engine.js</code></td>
+                <td>約8行目：<code>CLOUD_CONFIG.GAS_URL = '...'</code></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout info" style="margin-top:10px;">
+            <div class="callout-icon">💡</div>
+            <p>全員が同じ GAS URL を使えば、<strong>誰が作ったストーリーも同じスプシに集まります</strong>。授業・ワークショップで複数台同時使用する場合にも便利です。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="install-step">
+        <div class="install-num">3</div>
+        <div class="install-body">
+          <h4>guide.html をブラウザで開くだけ</h4>
+          <p>サーバーは不要です。<code>guide.html</code> をダブルクリックするか、ブラウザに <code>file://</code> パスをドラッグ＆ドロップすれば起動できます。起動ボタンから各アプリに移動してください。</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="callout warn" style="margin-top:20px;">
+      <div class="callout-icon">🔑</div>
+      <p>リポジトリが<strong>プライベート</strong>の場合、クローンには GitHub アカウントが必要です。現在は作者 (RyutaAwashima) 以外にアクセス権がありません。共有したい相手を GitHub の「Settings → Collaborators」から招待してください。</p>
+    </div>
+  </div><!-- /multidevice -->
+
+  <!-- ─────────── ロードマップ ─────────── -->
+  <hr class="divider">
+  <div id="roadmap">
+    <div class="section-head">
+      <div class="section-icon setup" style="font-size:26px;">🗺</div>
+      <div class="section-meta">
+        <div class="tag">Roadmap — 将来計画</div>
+        <h2>ウェブサービス化ロードマップ</h2>
+        <p>現在のローカル運用から、いつかの公開サービスまで</p>
+      </div>
+    </div>
+
+    <div class="roadmap">
+
+      <div class="roadmap-phase ph-now">
+        <div class="roadmap-badge">
+          <div class="ph-label">Phase 0</div>
+          <span class="ph-icon">🏠</span>
+          <div class="ph-name">現在</div>
+        </div>
+        <div class="roadmap-body">
+          <h3>ローカル PC + 個人 GAS（クローズドβ）</h3>
+          <p>各自の PC にリポジトリをクローンし、自分の GAS &amp; スプシで動かす形態。インターネット接続は Gemini API と GAS の呼び出しのみ。</p>
+          <ul>
+            <li>コスト：ほぼ無料（Gemini 無料枠 + Google Apps Script 無料枠）</li>
+            <li>制限：1 つの GAS アカウントの枠内に収まる規模のみ</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="roadmap-phase ph-near">
+        <div class="roadmap-badge">
+          <div class="ph-label">Phase 1</div>
+          <span class="ph-icon">🌐</span>
+          <div class="ph-name">近期</div>
+        </div>
+        <div class="roadmap-body">
+          <h3>LAN / Python HTTP サーバー共有</h3>
+          <p>授業・ワークショップなど同一ネットワーク内で複数人が同時利用できる構成。<br>講師 PC で <code>python -m http.server 8080</code> を起動するだけで参加者がブラウザからアクセス可能になります。</p>
+          <ul>
+            <li>追加コスト：なし（既存環境のまま）</li>
+            <li>必要作業：URL 配布のみ（設定変更不要）</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="roadmap-phase ph-mid">
+        <div class="roadmap-badge">
+          <div class="ph-label">Phase 2</div>
+          <span class="ph-icon">📦</span>
+          <div class="ph-name">中期</div>
+        </div>
+        <div class="roadmap-body">
+          <h3>GitHub Pages で静的公開</h3>
+          <p>フロントエンド（HTML/CSS/JS）を GitHub Pages に公開して固定 URL を持たせる。GAS &amp; スプシは引き続き個人アカウントのものを使用。</p>
+          <ul>
+            <li>URL が固定されリンク共有が簡単に</li>
+            <li>リポジトリを Public にする必要あり（または GitHub Pro のプライベートページ）</li>
+            <li>マルチユーザー対応には別途バックエンドが必要</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="roadmap-phase ph-far">
+        <div class="roadmap-badge">
+          <div class="ph-label">Phase 3</div>
+          <span class="ph-icon">⚡</span>
+          <div class="ph-name">将来</div>
+        </div>
+        <div class="roadmap-body">
+          <h3>バックエンドサービス化（マルチユーザー対応）</h3>
+          <p>GAS を廃止し、Vercel Functions / Cloud Run などでバックエンド API を構築。Firebase または Supabase でユーザー認証とデータ管理を行います。</p>
+          <ul>
+            <li>複数ユーザーが独立したスプシ（またはDB）を持てる</li>
+            <li>Gemini API キーをサーバー側で管理しクライアントに露出させない</li>
+            <li>コスト：月数百〜数千円（規模次第）</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="roadmap-phase ph-saas">
+        <div class="roadmap-badge">
+          <div class="ph-label">Phase 4</div>
+          <span class="ph-icon">🚀</span>
+          <div class="ph-name">SaaS</div>
+        </div>
+        <div class="roadmap-body">
+          <h3>認証・マルチテナント・有料プラン（SaaS）</h3>
+          <p>ユーザーアカウント登録、作品の公開/非公開設定、課金プランなどを備えた本格的なウェブサービス化。</p>
+          <ul>
+            <li>フリー枠：月 X 作品まで無料生成</li>
+            <li>プロプラン：生成回数無制限・カスタムキャラ・BGM アップロード</li>
+            <li>技術：Next.js / Stripe / Supabase Auth など</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /roadmap -->
+
+</div><!-- /wrap -->
+
+<div class="footer">
+  Mythos Project ｜ 使い方ガイド v1.1 ｜ 2026年5月
+</div>
+
+<script>
+  // アクティブナビのハイライト（簡易）
+  const sections = ['aria','canon','sonnet','setup'];
+  const navLinks = {};
+  sections.forEach(id => {
+    const el = document.querySelector(`.nav a.${id}`);
+    if (el) navLinks[id] = el;
+  });
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting && navLinks[e.target.id]) {
+        Object.values(navLinks).forEach(a => a.classList.remove('active'));
+        navLinks[e.target.id].classList.add('active');
+      }
+    });
+  }, { threshold: 0.3 });
+
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) observer.observe(el);
+  });
+</script>
+</body>
+</html>

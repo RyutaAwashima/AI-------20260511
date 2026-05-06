@@ -293,6 +293,73 @@
     #save-status.ok { color: #66bb6a; }
     #save-status.err { color: #ef5350; }
 
+    /* ── ストーリー紡ぎフェーズ ── */
+    .weave-textarea {
+      width: 100%;
+      background: #0a0a1f;
+      border: 1px solid #2a2a50;
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #e8eaff;
+      font-size: 13.5px;
+      font-family: inherit;
+      outline: none;
+      resize: vertical;
+      min-height: 80px;
+      line-height: 1.7;
+      transition: border-color 0.2s;
+    }
+    .weave-textarea:focus { border-color: #5c6bc0; }
+    .field-label {
+      display: block;
+      font-size: 12px;
+      color: #889;
+      margin-bottom: 5px;
+    }
+    .help-text {
+      font-size: 11.5px;
+      color: #556;
+      margin-top: 5px;
+      line-height: 1.6;
+    }
+    .weave-btn {
+      width: 100%;
+      background: #3d4a9e;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 13px;
+      font-size: 14.5px;
+      font-weight: bold;
+      letter-spacing: 0.05em;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .weave-btn:hover:not(:disabled) { background: #5c6bc0; transform: translateY(-1px); }
+    .weave-btn:disabled { background: #2a2a50; color: #444; cursor: not-allowed; transform: none; }
+    .story-text {
+      font-size: 14px;
+      line-height: 2.1;
+      color: #e0e4ff;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    #full-story-area {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+    #full-story-area.visible { display: flex; }
+    #story-save-status {
+      font-size: 12px;
+      color: #667;
+      text-align: center;
+      min-height: 18px;
+    }
+    #story-save-status.ok  { color: #66bb6a; }
+    #story-save-status.err { color: #ef5350; }
+
     /* ── フッター ── */
     .footer {
       text-align: center;
@@ -420,8 +487,10 @@
 
   <!-- 結果 -->
   <div id="result-area">
+
+    <!-- STEP 1：あらすじ・キャラ -->
     <div class="card">
-      <div class="card-title">📖 できたストーリー</div>
+      <div class="card-title">📖 STEP 1 — あらすじ完成！</div>
       <div class="result-section">
         <h3>あらすじ</h3>
         <div id="result-synopsis"></div>
@@ -432,13 +501,41 @@
       </div>
     </div>
 
+    <!-- あらすじアクション -->
     <div class="action-row">
-      <button class="action-btn" id="copy-btn">📋 テキストをコピー</button>
-      <button class="action-btn primary" id="save-btn">💾 Sheetsに保存</button>
-      <button class="action-btn" id="retry-btn">🔄 もう一度作る</button>
-      <button class="action-btn" id="reset-btn">↩ やり直す</button>
+      <button class="action-btn" id="copy-btn">📋 あらすじをコピー</button>
+      <button class="action-btn" id="retry-btn">🔄 あらすじを作り直す</button>
+      <button class="action-btn" id="reset-btn">↩ 最初からやり直す</button>
     </div>
-    <div id="save-status"></div>
+
+    <!-- STEP 2：ストーリーを紡ぐ -->
+    <div class="card">
+      <div class="card-title">✍️ STEP 2 — ストーリーを紡ぐ</div>
+      <label class="field-label" for="weave-hint">こだわりや追加してほしい要素（省略OK）</label>
+      <textarea id="weave-hint" class="weave-textarea" placeholder="例：ラストに驚きのどんでん返しを / 主人公が泣くシーンがほしい / セリフを多めに / コメディ要素を強めに"></textarea>
+      <div class="help-text">空のままでもOK。あらすじとキャラを元にAIが1000〜2000文字のストーリーを書きます。</div>
+      <button class="weave-btn" id="weave-btn" style="margin-top:12px;">✍️ ストーリーを紡ぐ</button>
+      <div class="loading-wrap" id="weave-loading" style="margin-top:8px;">
+        <div class="spinner"></div>
+        <span>Gemini がストーリーを書いています… 1〜2分かかることがあります</span>
+      </div>
+      <div class="error-msg" id="weave-error" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- STEP 3：完成ストーリー -->
+    <div id="full-story-area">
+      <div class="card">
+        <div class="card-title">📚 STEP 3 — 完成したストーリー</div>
+        <div id="full-story-text" class="story-text"></div>
+      </div>
+      <div class="action-row">
+        <button class="action-btn" id="story-copy-btn">📋 ストーリーをコピー</button>
+        <button class="action-btn primary" id="story-save-btn">💾 Sheetsに保存</button>
+        <button class="action-btn" id="weave-retry-btn">🔄 書き直す</button>
+      </div>
+      <div id="story-save-status"></div>
+    </div>
+
   </div>
 
   <div class="footer">
@@ -469,10 +566,19 @@ const elResultArea   = document.getElementById('result-area');
 const elSynopsis     = document.getElementById('result-synopsis');
 const elCharas       = document.getElementById('result-charas');
 const elCopyBtn      = document.getElementById('copy-btn');
-const elSaveBtn      = document.getElementById('save-btn');
 const elRetryBtn     = document.getElementById('retry-btn');
 const elResetBtn     = document.getElementById('reset-btn');
-const elSaveStatus   = document.getElementById('save-status');
+// STEP 2：ストーリー紡ぎ
+const elWeaveBtn     = document.getElementById('weave-btn');
+const elWeaveHint    = document.getElementById('weave-hint');
+const elWeaveLoad    = document.getElementById('weave-loading');
+const elWeaveErr     = document.getElementById('weave-error');
+const elFullArea     = document.getElementById('full-story-area');
+const elFullText     = document.getElementById('full-story-text');
+const elStoryCopy    = document.getElementById('story-copy-btn');
+const elStorySave    = document.getElementById('story-save-btn');
+const elWeaveRetry   = document.getElementById('weave-retry-btn');
+const elSaveStatus   = document.getElementById('story-save-status');
 
 // ═══════════════════════════════════════════════════════
 //  プロンプト自動生成
@@ -616,6 +722,129 @@ elGenBtn.addEventListener('click', generate);
 elRetryBtn.addEventListener('click', generate);
 
 // ═══════════════════════════════════════════════════════
+//  STEP 2: ストーリーを紡ぐ
+// ═══════════════════════════════════════════════════════
+let lastFullStory  = null;
+let lastWeavePrompt = null;
+
+function buildFullStoryPrompt(synopsis, charas, hint) {
+  const charaLines = charas.map(c => `・${c.name}（${c.role}）：${c.desc}`).join('\n');
+  const hintPart = hint ? `\n\n《追加してほしい要素・こだわり》\n${hint}` : '';
+  return [
+    '以下のあらすじと登場人物をもとに、中学生向けサウンドノベル用のショートストーリーを書いてください。',
+    '',
+    '《あらすじ》',
+    synopsis,
+    '',
+    '《登場人物》',
+    charaLines,
+    hintPart,
+    '',
+    '《執筆ルール》',
+    '・文字数：1000～2000文字',
+    '・セリフ（「　」）を豊富に使い、会話劇として楽しめるようにする',
+    '・中学生でも読みやすい文体で書く',
+    '・起承転結を意識した構成にする',
+    '・地の文とセリフを交互に入れ、テンポよく読めるようにする',
+    '・感情表現を豊かに書く',
+    '・明確なエンディングで締めくくる',
+    '・「---」などの区切り記号は使わず、連続した文章として書く',
+  ].join('\n');
+}
+
+async function weaveStory() {
+  if (!lastResult) return;
+  const hint = elWeaveHint.value.trim();
+  const prompt = buildFullStoryPrompt(lastResult.synopsis, lastResult.charas, hint);
+  lastWeavePrompt = prompt;
+
+  elWeaveLoad.classList.add('visible');
+  elWeaveErr.classList.remove('visible');
+  elWeaveBtn.disabled = true;
+  elFullArea.classList.remove('visible');
+
+  try {
+    if (!CONFIG.GAS_URL) throw new Error('GAS_URL が設定されていません');
+    const res = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ action: 'weave', prompt }),
+      redirect: 'follow',
+    });
+    if (!res.ok) throw new Error(`サーバーエラー (HTTP ${res.status})`);
+    const data = await parseGasResponse(res);
+    if (data.error) throw new Error(data.error);
+    lastFullStory = data.text;
+    renderFullStory(data.text);
+  } catch (e) {
+    elWeaveErr.textContent = '⚠ ' + e.message;
+    elWeaveErr.classList.add('visible');
+  } finally {
+    elWeaveLoad.classList.remove('visible');
+    elWeaveBtn.disabled = false;
+  }
+}
+
+function renderFullStory(text) {
+  elFullText.textContent = text;
+  elFullArea.classList.add('visible');
+  elSaveStatus.textContent = '';
+  elSaveStatus.className = '';
+  elFullArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+elWeaveBtn.addEventListener('click', weaveStory);
+elWeaveRetry.addEventListener('click', weaveStory);
+
+elStoryCopy.addEventListener('click', () => {
+  if (!lastFullStory) return;
+  navigator.clipboard.writeText(lastFullStory).then(() => {
+    const orig = elStoryCopy.textContent;
+    elStoryCopy.textContent = '✅ コピーしました！';
+    setTimeout(() => { elStoryCopy.textContent = orig; }, 2000);
+  });
+});
+
+elStorySave.addEventListener('click', async () => {
+  if (!lastFullStory) return;
+  if (!CONFIG.GAS_URL) { setSaveStatus('GAS_URL が未設定です', false); return; }
+
+  elStorySave.disabled = true;
+  setSaveStatus('保存中…', null);
+
+  try {
+    const payload = {
+      action:      'save',
+      userName:    elUserName.value.trim() || '匿名',
+      keywords:    getChecked().join('、'),
+      promptSent:  lastWeavePrompt || lastPrompt || '',
+      storyRaw:    lastResult?.raw || '',
+      synopsis:    lastResult?.synopsis || '',
+      charas:      lastResult?.charas || [],
+      fullStory:   lastFullStory,
+    };
+    const res = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload),
+      redirect: 'follow',
+    });
+    const data = await parseGasResponse(res);
+    if (data.error) throw new Error(data.error);
+    setSaveStatus('✅ 保存しました！（行 ' + (data.row || '?') + '）', true);
+  } catch (e) {
+    setSaveStatus('❌ 保存失敗：' + e.message, false);
+  } finally {
+    elStorySave.disabled = false;
+  }
+});
+
+function setSaveStatus(msg, ok) {
+  elSaveStatus.textContent = msg;
+  elSaveStatus.className = ok === true ? 'ok' : ok === false ? 'err' : '';
+}
+
+// ═══════════════════════════════════════════════════════
 //  結果表示
 // ═══════════════════════════════════════════════════════
 function renderResult({ synopsis, charas }) {
@@ -644,7 +873,7 @@ function hideResult() {
 }
 
 // ═══════════════════════════════════════════════════════
-//  コピー
+//  コピー（あらすじ）
 // ═══════════════════════════════════════════════════════
 elCopyBtn.addEventListener('click', () => {
   if (!lastResult) return;
@@ -664,48 +893,8 @@ elCopyBtn.addEventListener('click', () => {
 });
 
 // ═══════════════════════════════════════════════════════
-//  Sheets 保存
+//  Sheets 保存は STEP 3 の elStorySave リスナーで処理済み
 // ═══════════════════════════════════════════════════════
-elSaveBtn.addEventListener('click', async () => {
-  if (!lastResult) return;
-  if (!CONFIG.GAS_URL) {
-    setSaveStatus('GAS_URL が未設定です', false);
-    return;
-  }
-
-  elSaveBtn.disabled = true;
-  setSaveStatus('保存中…', null);
-
-  try {
-    const payload = {
-      action:      'save',
-      userName:    elUserName.value.trim() || '匿名',
-      keywords:    getChecked().join('、'),
-      promptSent:  lastPrompt,
-      storyRaw:    lastResult.raw,
-      synopsis:    lastResult.synopsis,
-      charas:      lastResult.charas,
-    };
-    const res = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload),
-      redirect: 'follow',
-    });
-    const data = await parseGasResponse(res);
-    if (data.error) throw new Error(data.error);
-    setSaveStatus('✅ 保存しました！（行 ' + (data.row || '?') + '）', true);
-  } catch (e) {
-    setSaveStatus('❌ 保存失敗：' + e.message, false);
-  } finally {
-    elSaveBtn.disabled = false;
-  }
-});
-
-function setSaveStatus(msg, ok) {
-  elSaveStatus.textContent = msg;
-  elSaveStatus.className = ok === true ? 'ok' : ok === false ? 'err' : '';
-}
 
 // ═══════════════════════════════════════════════════════
 //  リセット
@@ -715,6 +904,11 @@ elResetBtn.addEventListener('click', () => {
   elUserName.value = '';
   lastResult = null;
   lastPrompt = null;
+  lastFullStory  = null;
+  lastWeavePrompt = null;
+  elWeaveHint.value = '';
+  elFullArea.classList.remove('visible');
+  elWeaveErr.classList.remove('visible');
   hideResult();
   hideError();
   updatePreview();

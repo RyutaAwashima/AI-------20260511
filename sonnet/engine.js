@@ -3,6 +3,11 @@
  * スクリプト読み込み・シーン遷移・入力受付を担当
  */
 
+// ── クラウド設定（GASからストーリーを読み込む場合に設定） ──
+const CLOUD_CONFIG = {
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbzdSAoFA7G9ByUdbQDqDIUcDTn4iCI-vhD37BSJFK2CMzO7awdY_kz1j3SZdjnW8eXv/exec',
+};
+
 const Engine = (() => {
   // ── 状態 ──
   let story       = null;   // 現在のストーリーオブジェクト
@@ -55,6 +60,8 @@ const Engine = (() => {
     const list = document.getElementById('story-list');
     if (!list) return;
     list.innerHTML = '';
+
+    // ローカルストーリー
     STORIES.forEach(s => {
       const btn = document.createElement('button');
       btn.className = 'story-btn';
@@ -62,7 +69,97 @@ const Engine = (() => {
       btn.addEventListener('click', () => loadStory(s));
       list.appendChild(btn);
     });
+
+    // クラウド読み込みボタン
+    if (CLOUD_CONFIG.GAS_URL) {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'width:100%;text-align:center;font-size:11px;color:#334;margin:8px 0 4px;letter-spacing:0.1em;';
+      sep.textContent = '── または ──';
+      list.appendChild(sep);
+
+      const cloudBtn = document.createElement('button');
+      cloudBtn.className = 'story-btn';
+      cloudBtn.innerHTML = `<span>☁ スプシからストーリーを読み込む</span><span class="s-genre">cloud</span>`;
+      cloudBtn.addEventListener('click', () => showCloudList(list));
+      list.appendChild(cloudBtn);
+    }
+
     elOverlay.classList.remove('hidden');
+  }
+
+  // ── クラウドストーリーリスト表示 ──
+  async function showCloudList(list) {
+    list.innerHTML = '<div style="text-align:center;color:#556;font-size:12px;padding:14px 0;">&#x2601; 読み込み中…</div>';
+    try {
+      const res = await fetch(CLOUD_CONFIG.GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'list_stories' }),
+        redirect: 'follow',
+      });
+      const text = await res.text();
+      if (text.trimStart().startsWith('<')) throw new Error('GAS認証エラー：アクセス権を確認してください');
+      const data = JSON.parse(text);
+      if (data.error) throw new Error(data.error);
+
+      list.innerHTML = '';
+
+      if (!data.stories || data.stories.length === 0) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'text-align:center;color:#556;font-size:12px;padding:12px 0;';
+        empty.textContent = 'まだ保存されたストーリーがありません';
+        list.appendChild(empty);
+      } else {
+        data.stories.forEach(s => {
+          const btn = document.createElement('button');
+          btn.className = 'story-btn';
+          btn.innerHTML = `<span>${cloudEsc(s.title)}</span><span class="s-genre">${cloudEsc(s.genre || 'cloud')}</span>`;
+          btn.addEventListener('click', () => loadCloudStory(s.id, btn));
+          list.appendChild(btn);
+        });
+      }
+
+      const backBtn = document.createElement('button');
+      backBtn.className = 'story-btn';
+      backBtn.style.marginTop = '8px';
+      backBtn.innerHTML = '<span>← もどる</span><span class="s-genre"></span>';
+      backBtn.addEventListener('click', buildTitleScreen);
+      list.appendChild(backBtn);
+
+    } catch (e) {
+      list.innerHTML = `<div style="text-align:center;color:#f66;font-size:12px;padding:12px 0;">⚠ ${cloudEsc(e.message)}</div>`;
+      const backBtn = document.createElement('button');
+      backBtn.className = 'story-btn';
+      backBtn.style.marginTop = '8px';
+      backBtn.innerHTML = '<span>← もどる</span><span class="s-genre"></span>';
+      backBtn.addEventListener('click', buildTitleScreen);
+      list.appendChild(backBtn);
+    }
+  }
+
+  // ── クラウドストーリーロード ──
+  async function loadCloudStory(id, btn) {
+    btn.disabled = true;
+    btn.querySelector('span').textContent = '読み込み中…';
+    try {
+      const res = await fetch(CLOUD_CONFIG.GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'load_story', id }),
+        redirect: 'follow',
+      });
+      const text = await res.text();
+      const data = JSON.parse(text);
+      if (data.error) throw new Error(data.error);
+      loadStory(data.storyData);
+    } catch (e) {
+      btn.disabled = false;
+      btn.querySelector('span').textContent = '⚠ ' + cloudEsc(e.message);
+    }
+  }
+
+  function cloudEsc(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
 
   // ── ストーリーロード ──

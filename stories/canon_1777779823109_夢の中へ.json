@@ -1,0 +1,572 @@
+{
+  "meta": {
+    "id": "canon_1777779823109",
+    "title": "夢の中へ",
+    "genre": "コメディ",
+    "author": "Canon Editor",
+    "created_at": "2026-05-03T03:43:43.109Z",
+    "assets": {
+      "characters": {
+        "chara_1": {
+          "name": "ユウキ",
+          "color": "#c8a0c8",
+          "emoji": "🙂"
+        },
+        "chara_2": {
+          "name": "リリス",
+          "color": "#a0c0e8",
+          "emoji": "🙂"
+        },
+        "chara_3": {
+          "name": "ゾルタン",
+          "color": "#f0c060",
+          "emoji": "🙂"
+        },
+        "chara_4": {
+          "name": "魔王",
+          "color": "#80c090",
+          "emoji": "🙂"
+        }
+      },
+      "backgrounds": {
+        "hallway": {
+          "label": "校舎の廊下",
+          "color": "#1c1c28",
+          "accent": "#2c2c38"
+        },
+        "rooftop": {
+          "label": "屋上（夕暮れ）",
+          "color": "#2a1a0a",
+          "accent": "#3a2810"
+        }
+      },
+      "bgm": {
+        "eerie": "不気味（低い唸り）",
+        "dramatic": "ドラマチック",
+        "emotional": "切ない（ピアノ風）",
+        "hopeful": "希望（明るめ）"
+      }
+    }
+  },
+  "scenes": [
+    {
+      "id": "scene_001",
+      "background": "hallway",
+      "bgm": "eerie",
+      "lines": [
+        {
+          "type": "narration",
+          "text": "うわっ！なんだ、ここ…？"
+        },
+        {
+          "type": "narration",
+          "text": "石造りの建物が崩れかかり、蔦が絡まった回廊。"
+        },
+        {
+          "type": "narration",
+          "text": "さっきまで、いつものように学校の屋上でぼんやりしていたはずなのに。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "surprised",
+          "text": "え、どこだよ、ここ…！？"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "happy",
+          "text": "ふふふ、やっと来たわね、ユウキ。"
+        },
+        {
+          "type": "scene_end",
+          "next": "scene_002"
+        }
+      ]
+    },
+    {
+      "id": "scene_002",
+      "background": "hallway",
+      "bgm": "eerie",
+      "lines": [
+        {
+          "type": "narration",
+          "text": "どこからか、鈴が転がるような可愛らしい声が響いた。"
+        },
+        {
+          "type": "narration",
+          "text": "ユウキが辺りを見回すと、ふわりと風に乗り、小さな女の子が現れた。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "confused",
+          "text": "え、誰？どうして僕の名前を…"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "smile",
+          "text": "私はリリス。この学園の…いや、かつてこの学園にいた精霊よ。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "smirk",
+          "text": "この学園はね、かつて天才魔術師たちが競い合った場所なの。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "smile",
+          "text": "そして、ここはユウキの夢の中でもあるのよ。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "confused",
+          "text": "夢の中…？学校での悩みって、そういうこと？"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "happy",
+          "text": "そう！ユウキの心のモヤモヤが、この世界を形作っているの。"
+        },
+        {
+          "type": "scene_end",
+          "next": "scene_003"
+        }
+      ]
+    },
+    {
+      "id": "scene_003",
+      "background": "hallway",
+      "bgm": "dramatic",
+      "lines": [
+        {
+          "type": "narration",
+          "text": "リリスはそう言いながら、ユウキの顔を覗き込んだ。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "happy",
+          "text": "ほら、あれ！"
+        },
+        {
+          "type": "narration",
+          "text": "リリスが指差す先には、クールな顔立ちの少年が立っていた。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "surprised",
+          "text": "ゾルタン？どうしてここに！"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_3",
+          "position": "left",
+          "expression": "serious",
+          "text": "ユウキ、君がここにいるとはな。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_3",
+          "position": "left",
+          "expression": "neutral",
+          "text": "私も、この学園に用がある。君とは立場が違うようだ。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "confused",
+          "text": "立場が違うって、どういうこと？"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "concerned",
+          "text": "ゾルタンはね、この学園の過去の因縁に関わっているみたい。"
+        },
+        {
+          "type": "scene_end",
+          "next": "scene_004"
+        }
+      ]
+    },
+    {
+      "id": "scene_004",
+      "background": "hallway",
+      "bgm": "eerie",
+      "lines": [
+        {
+          "type": "narration",
+          "text": "その時、学園の奥から、唸るような声が響き渡った。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_4",
+          "position": "right",
+          "expression": "angry",
+          "text": "ぐおおおお！我が娘よ！早く父を復活させるのじゃ！"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "shocked",
+          "text": "あ！父様！"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "concerned",
+          "text": "ユウキ、お願い！父様を止めないと！"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "surprised",
+          "text": "父様？まさか、さっきの唸り声って…"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "sad",
+          "text": "父様は、魔王なの！"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "sad",
+          "text": "魔王の復活には、子供たちの夢のエネルギーが必要なの。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "sad",
+          "text": "でも、ユウキといると、なんだか…"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "sad",
+          "text": "父様を復活させることだけじゃなくて、ユウキのことも大切にしたいって思っちゃうんだ…"
+        },
+        {
+          "type": "scene_end",
+          "next": "scene_005"
+        }
+      ]
+    },
+    {
+      "id": "scene_005",
+      "background": "hallway",
+      "bgm": "dramatic",
+      "lines": [
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "concerned",
+          "text": "でも、父様を放っておけない！"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "serious",
+          "text": "ユウキ、力を貸して！父様を説得しなきゃ！"
+        },
+        {
+          "type": "narration",
+          "text": "ユウキは、リリスの強い意志に押されるように、一緒に走り出した。"
+        },
+        {
+          "type": "narration",
+          "text": "ゾルタンも、彼らを追うように歩き出した。"
+        },
+        {
+          "type": "narration",
+          "text": "魔王の元にたどり着くと、そこには巨大な魔王の姿があった。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "sad",
+          "text": "父様！お願い、もうやめて！私、父様が復活しても、嬉しくないかもしれない！"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_4",
+          "position": "right",
+          "expression": "neutral",
+          "text": "娘よ…お前は、父の力を恐れているのか…"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "sad",
+          "text": "違う！父様が、父様が私を見てくれないなら、私は父様なんていらない！"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "concerned",
+          "text": "リリス、大丈夫だよ。一人で抱え込まなくていいんだ。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "smile",
+          "text": "僕だって、家族のこと、色々悩んでる。でも、ちゃんと話せば、きっと伝わるって信じてるんだ。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_4",
+          "position": "right",
+          "expression": "neutral",
+          "text": "…娘よ、お前は、父の代わりに、誰かの心を癒す力を持っていたのだな。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_4",
+          "position": "right",
+          "expression": "neutral",
+          "text": "父は、ただ強くなることばかりを考えて、お前の心を、お前が本当は何を望んでいるのか、見ようとしていなかった。すまない、リリス。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "sad",
+          "text": "父様…"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_4",
+          "position": "right",
+          "expression": "neutral",
+          "text": "ユウキ、君のおかげだ。君の優しさが、私に気づかせてくれた。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_4",
+          "position": "right",
+          "expression": "neutral",
+          "text": "そして、ゾルタン。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_4",
+          "position": "right",
+          "expression": "neutral",
+          "text": "お前は、この学園に眠る過去の呪いを解く鍵を持っている。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_4",
+          "position": "right",
+          "expression": "neutral",
+          "text": "私は、この学園の平和を取り戻すために、ここにいる。"
+        },
+        {
+          "type": "narration",
+          "text": "魔王は、ゆっくりと姿を消していった。"
+        },
+        {
+          "type": "scene_end",
+          "next": "scene_006"
+        }
+      ]
+    },
+    {
+      "id": "scene_006",
+      "background": "hallway",
+      "bgm": "emotional",
+      "lines": [
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "sad",
+          "text": "ありがとう、ユウキ。私、父様のこと、どうすればいいか分からなくなってた。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "happy",
+          "text": "でも、ユウキと話して、父様ともっとちゃんと向き合ってみようって思えた。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "smile",
+          "text": "うん、きっと大丈夫だよ。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "happy",
+          "text": "ユウキ、私、もう夢のエネルギーを集める必要はないみたい。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "happy",
+          "text": "だって、ユウキが、私にとって一番大切な夢になったから。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "neutral",
+          "text": "それにね、ユウキ。私、実は魔王の娘だけど、本当は…"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "neutral",
+          "text": "…この世界で、ユウキの成長を見守るために、精霊として生まれ変わったの。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "shocked",
+          "text": "ええええええっ！？"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "happy",
+          "text": "ふふ、そうみたいね。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "smile",
+          "text": "でも、ユウキ。夢から覚めたら、また学校での悩みが待ってるわよ？"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "surprised",
+          "text": "うわ、忘れてた！"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "smile",
+          "text": "大丈夫。ユウキなら、きっと乗り越えられる。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "smile",
+          "text": "だって、ユウキは、もう一人じゃないんだから。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "smile",
+          "text": "さあ、そろそろお別れの時間よ。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_2",
+          "position": "right",
+          "expression": "smile",
+          "text": "また、夢の中で会おうね、ユウキ。"
+        },
+        {
+          "type": "scene_end",
+          "next": "scene_007"
+        }
+      ]
+    },
+    {
+      "id": "scene_007",
+      "background": "rooftop",
+      "bgm": "hopeful",
+      "lines": [
+        {
+          "type": "narration",
+          "text": "ユウキが目を開けると、そこはいつもの学校の屋上だった。"
+        },
+        {
+          "type": "narration",
+          "text": "しかし、以前とは違う、晴れやかな気持ちになっていた。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "neutral",
+          "text": "リリス…"
+        },
+        {
+          "type": "narration",
+          "text": "ユウキは、そっと頬に触れた。あの温かい感触が、まだ残っているような気がした。"
+        },
+        {
+          "type": "dialogue",
+          "character": "chara_1",
+          "position": "left",
+          "expression": "happy",
+          "text": "よし、頑張ろう！"
+        },
+        {
+          "type": "narration",
+          "text": "ユウキは、決意を新たに、屋上を後にした。"
+        },
+        {
+          "type": "narration",
+          "text": "現実での悩みも、きっと乗り越えられる。"
+        },
+        {
+          "type": "narration",
+          "text": "だって、ユウキには、夢の中で出会った、大切な精霊がいるのだから。"
+        },
+        {
+          "type": "scene_end"
+        }
+      ]
+    }
+  ]
+}
