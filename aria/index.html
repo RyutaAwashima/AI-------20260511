@@ -360,6 +360,155 @@
     #story-save-status.ok  { color: #66bb6a; }
     #story-save-status.err { color: #ef5350; }
 
+    /* ── 章立てモード切り替え ── */
+    .mode-toggle {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .mode-btn {
+      flex: 1;
+      padding: 8px 6px;
+      border: 1.5px solid #2a2a50;
+      border-radius: 8px;
+      background: transparent;
+      color: #778;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      line-height: 1.4;
+    }
+    .mode-btn:hover { border-color: #5c6bc0; color: #aab; }
+    .mode-btn.active {
+      background: #3d4a9e;
+      border-color: #5c6bc0;
+      color: #fff;
+    }
+    .mode-btn .mode-icon { display: block; font-size: 16px; margin-bottom: 2px; }
+    .mode-hint {
+      font-size: 11.5px;
+      color: #556;
+      margin-top: 6px;
+      min-height: 16px;
+    }
+
+    /* ── デバッグ：伏線チェックリスト ── */
+    .debug-panel {
+      margin-top: 12px;
+      border: 1px dashed #3a3a60;
+      border-radius: 10px;
+      overflow: hidden;
+      font-size: 12px;
+    }
+    .debug-panel summary {
+      cursor: pointer;
+      padding: 8px 12px;
+      color: #7986cb;
+      background: #0a0b1e;
+      user-select: none;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .debug-panel summary::before { content: '▶'; font-size: 10px; }
+    .debug-panel[open] summary::before { content: '▼'; }
+    .debug-checklist {
+      padding: 10px 12px;
+      background: #080916;
+    }
+    .debug-checklist-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid #1a1a30;
+      line-height: 1.5;
+    }
+    .debug-checklist-item:last-child { border-bottom: none; }
+    .foreshadow-badge {
+      flex-shrink: 0;
+      padding: 1px 7px;
+      border-radius: 20px;
+      font-size: 10.5px;
+      font-weight: bold;
+    }
+    .foreshadow-badge.pending  { background: #33334a; color: #aab; }
+    .foreshadow-badge.partial  { background: #3a3010; color: #ffd54f; }
+    .foreshadow-badge.resolved { background: #0d2e1a; color: #69f0ae; }
+    .foreshadow-note { color: #666; font-size: 11px; margin-left: 4px; }
+
+    /* ── 章編集エリア ── */
+    .chapter-editor {
+      display: none;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px dashed #2a2a50;
+    }
+    .chapter-editor.visible { display: block; }
+    .chapter-editor-title {
+      font-size: 12.5px;
+      color: #9fa8da;
+      margin-bottom: 10px;
+      letter-spacing: 0.04em;
+    }
+    .chapter-block {
+      border: 1px solid #2a2a50;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #0f1025;
+    }
+    .chapter-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .chapter-name {
+      font-size: 12.5px;
+      font-weight: bold;
+      color: #c5caf7;
+    }
+    .chapter-status {
+      font-size: 11px;
+      color: #667;
+      min-height: 14px;
+      text-align: right;
+    }
+    .chapter-area {
+      width: 100%;
+      min-height: 120px;
+      background: #0a0a1f;
+      border: 1px solid #2a2a50;
+      border-radius: 8px;
+      padding: 10px;
+      color: #e0e4ff;
+      font-size: 13px;
+      line-height: 1.8;
+      resize: vertical;
+    }
+    .chapter-tools {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .chapter-btn {
+      border: 1px solid #3d4a9e;
+      border-radius: 7px;
+      padding: 6px 10px;
+      background: transparent;
+      color: #9fa8da;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .chapter-btn:hover:not(:disabled) { background: #2b3474; color: #fff; }
+    .chapter-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
     /* ── フッター ── */
     .footer {
       text-align: center;
@@ -505,6 +654,7 @@
     <div class="action-row">
       <button class="action-btn" id="copy-btn">📋 あらすじをコピー</button>
       <button class="action-btn" id="retry-btn">🔄 あらすじを作り直す</button>
+      <button class="action-btn" id="keyword-reset-btn">🧹 キーワードをリセット</button>
       <button class="action-btn" id="reset-btn">↩ 最初からやり直す</button>
     </div>
 
@@ -514,10 +664,22 @@
       <label class="field-label" for="weave-hint">こだわりや追加してほしい要素（省略OK）</label>
       <textarea id="weave-hint" class="weave-textarea" placeholder="例：ラストに驚きのどんでん返しを / 主人公が泣くシーンがほしい / セリフを多めに / コメディ要素を強めに"></textarea>
       <div class="help-text">空のままでもOK。あらすじとキャラを元にAIが1000〜2000文字のストーリーを書きます。</div>
+
+      <!-- 生成モード切り替え -->
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="mode-standard">
+          <span class="mode-icon">⚡</span>通常モード
+        </button>
+        <button class="mode-btn" id="mode-chapters">
+          <span class="mode-icon">📖</span>章立てモード（4章）
+        </button>
+      </div>
+      <div class="mode-hint" id="mode-hint-text">AIが1回で一気に書きあげます（1〜2分）</div>
+
       <button class="weave-btn" id="weave-btn" style="margin-top:12px;">✍️ ストーリーを紡ぐ</button>
       <div class="loading-wrap" id="weave-loading" style="margin-top:8px;">
         <div class="spinner"></div>
-        <span>Gemini がストーリーを書いています… 1〜2分かかることがあります</span>
+        <span id="weave-loading-msg">Gemini がストーリーを書いています… 1〜2分かかることがあります</span>
       </div>
       <div class="error-msg" id="weave-error" style="margin-top:8px;"></div>
     </div>
@@ -527,6 +689,7 @@
       <div class="card">
         <div class="card-title">📚 STEP 3 — 完成したストーリー</div>
         <div id="full-story-text" class="story-text"></div>
+        <div id="chapter-editor" class="chapter-editor"></div>
       </div>
       <div class="action-row">
         <button class="action-btn" id="story-copy-btn">📋 ストーリーをコピー</button>
@@ -534,6 +697,10 @@
         <button class="action-btn" id="weave-retry-btn">🔄 書き直す</button>
       </div>
       <div id="story-save-status"></div>
+      <details class="debug-panel" id="debug-checklist-panel" style="display:none">
+        <summary>🔍 デバッグ：伏線チェックリスト</summary>
+        <div class="debug-checklist" id="debug-checklist-body"></div>
+      </details>
     </div>
 
   </div>
@@ -567,18 +734,42 @@ const elSynopsis     = document.getElementById('result-synopsis');
 const elCharas       = document.getElementById('result-charas');
 const elCopyBtn      = document.getElementById('copy-btn');
 const elRetryBtn     = document.getElementById('retry-btn');
+const elKeywordReset = document.getElementById('keyword-reset-btn');
 const elResetBtn     = document.getElementById('reset-btn');
 // STEP 2：ストーリー紡ぎ
-const elWeaveBtn     = document.getElementById('weave-btn');
-const elWeaveHint    = document.getElementById('weave-hint');
-const elWeaveLoad    = document.getElementById('weave-loading');
-const elWeaveErr     = document.getElementById('weave-error');
-const elFullArea     = document.getElementById('full-story-area');
-const elFullText     = document.getElementById('full-story-text');
-const elStoryCopy    = document.getElementById('story-copy-btn');
-const elStorySave    = document.getElementById('story-save-btn');
-const elWeaveRetry   = document.getElementById('weave-retry-btn');
-const elSaveStatus   = document.getElementById('story-save-status');
+const elWeaveBtn      = document.getElementById('weave-btn');
+const elWeaveHint     = document.getElementById('weave-hint');
+const elWeaveLoad     = document.getElementById('weave-loading');
+const elWeaveLoadMsg  = document.getElementById('weave-loading-msg');
+const elWeaveErr      = document.getElementById('weave-error');
+const elFullArea      = document.getElementById('full-story-area');
+const elFullText      = document.getElementById('full-story-text');
+const elStoryCopy     = document.getElementById('story-copy-btn');
+const elStorySave     = document.getElementById('story-save-btn');
+const elWeaveRetry    = document.getElementById('weave-retry-btn');
+const elSaveStatus    = document.getElementById('story-save-status');
+const elChapterEditor = document.getElementById('chapter-editor');
+// 章立てモード切り替え
+const elModeStandard  = document.getElementById('mode-standard');
+const elModeChapters  = document.getElementById('mode-chapters');
+const elModeHintText  = document.getElementById('mode-hint-text');
+let useChapterMode    = false;
+let chapterTexts      = [];
+let lastChecklist     = [];
+const CHAPTER_TITLES  = ['第1章：導入', '第2章：拡張', '第3章：回収前半', '第4章：回収後半'];
+
+elModeStandard.addEventListener('click', () => {
+  useChapterMode = false;
+  elModeStandard.classList.add('active');
+  elModeChapters.classList.remove('active');
+  elModeHintText.textContent = 'AIが1回で一気に書きあげます（1〜2分）';
+});
+elModeChapters.addEventListener('click', () => {
+  useChapterMode = true;
+  elModeChapters.classList.add('active');
+  elModeStandard.classList.remove('active');
+  elModeHintText.textContent = '4章構成で伏線を管理しながら生成します（4〜6分）';
+});
 
 // ═══════════════════════════════════════════════════════
 //  プロンプト自動生成
@@ -755,8 +946,6 @@ function buildFullStoryPrompt(synopsis, charas, hint) {
 async function weaveStory() {
   if (!lastResult) return;
   const hint = elWeaveHint.value.trim();
-  const prompt = buildFullStoryPrompt(lastResult.synopsis, lastResult.charas, hint);
-  lastWeavePrompt = prompt;
 
   elWeaveLoad.classList.add('visible');
   elWeaveErr.classList.remove('visible');
@@ -765,17 +954,54 @@ async function weaveStory() {
 
   try {
     if (!CONFIG.GAS_URL) throw new Error('GAS_URL が設定されていません');
-    const res = await fetch(CONFIG.GAS_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ action: 'weave', prompt }),
-      redirect: 'follow',
-    });
-    if (!res.ok) throw new Error(`サーバーエラー (HTTP ${res.status})`);
-    const data = await parseGasResponse(res);
-    if (data.error) throw new Error(data.error);
-    lastFullStory = data.text;
-    renderFullStory(data.text);
+
+    let fullStory;
+
+    if (useChapterMode) {
+      // ── 章立てモード：weave_chapters アクション ──
+      elWeaveLoadMsg.textContent = '第1章を生成中… しばらくお待ちください';
+      const res = await fetch(CONFIG.GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({
+          action:   'weave_chapters',
+          synopsis: lastResult.synopsis,
+          charas:   lastResult.charas,
+          hint:     hint,
+        }),
+        redirect: 'follow',
+      });
+      if (!res.ok) throw new Error(`サーバーエラー (HTTP ${res.status})`);
+      elWeaveLoadMsg.textContent = '全章を生成中… 伏線の回収チェックを行っています（4〜6分）';
+      const data = await parseGasResponse(res);
+      if (data.error) throw new Error(data.error);
+      fullStory = data.text;
+      chapterTexts = Array.isArray(data.chapterTexts)
+        ? data.chapterTexts.map(t => String(t || ''))
+        : parseChapterTexts(data.text);
+      lastChecklist = Array.isArray(data.checklist) ? data.checklist : [];
+      renderChecklist();
+      lastWeavePrompt = `[章立てモード] synopsis=${lastResult.synopsis.slice(0, 60)}`;
+    } else {
+      // ── 通常モード：weave アクション ──
+      elWeaveLoadMsg.textContent = 'Gemini がストーリーを書いています… 1〜2分かかることがあります';
+      const prompt = buildFullStoryPrompt(lastResult.synopsis, lastResult.charas, hint);
+      lastWeavePrompt = prompt;
+      const res = await fetch(CONFIG.GAS_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'weave', prompt }),
+        redirect: 'follow',
+      });
+      if (!res.ok) throw new Error(`サーバーエラー (HTTP ${res.status})`);
+      const data = await parseGasResponse(res);
+      if (data.error) throw new Error(data.error);
+      fullStory = data.text;
+      chapterTexts = [];
+    }
+
+    lastFullStory = fullStory;
+    renderFullStory(fullStory, useChapterMode);
   } catch (e) {
     elWeaveErr.textContent = '⚠ ' + e.message;
     elWeaveErr.classList.add('visible');
@@ -785,12 +1011,172 @@ async function weaveStory() {
   }
 }
 
-function renderFullStory(text) {
+function renderFullStory(text, showEditor = false) {
   elFullText.textContent = text;
+  if (showEditor && chapterTexts.length >= 3) {
+    renderChapterEditor();
+  } else {
+    hideChapterEditor();
+  }
   elFullArea.classList.add('visible');
   elSaveStatus.textContent = '';
   elSaveStatus.className = '';
   elFullArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function hideChapterEditor() {
+  elChapterEditor.classList.remove('visible');
+  elChapterEditor.innerHTML = '';
+}
+
+function renderChapterEditor() {
+  if (chapterTexts.length < 3) {
+    hideChapterEditor();
+    return;
+  }
+  const chapterCount = chapterTexts.length;
+  elChapterEditor.classList.add('visible');
+  elChapterEditor.innerHTML = `
+    <div class="chapter-editor-title">🧩 章ごとの調整（再生成・手編集）</div>
+    <div class="help-text" style="margin-bottom:10px;">整合性重視なら「この章以降を再生成」を推奨します。</div>
+    ${chapterTexts.map((text, i) => `
+      <div class="chapter-block" data-chapter="${i + 1}">
+        <div class="chapter-head">
+          <div class="chapter-name">${CHAPTER_TITLES[i] || `第${i + 1}章`}</div>
+          <div class="chapter-status" id="chapter-status-${i + 1}"></div>
+        </div>
+        <textarea class="chapter-area" id="chapter-text-${i + 1}">${esc(text)}</textarea>
+        <div class="chapter-tools">
+          <button class="chapter-btn" data-regenerate="${i + 1}">🔁 この章だけ再生成</button>
+          ${i < chapterCount - 1
+            ? `<button class="chapter-btn" data-regenerate-tail="${i + 1}">⛓ この章以降を再生成</button>`
+            : ''}
+        </div>
+      </div>
+    `).join('')}
+  `;
+
+  for (let i = 1; i <= chapterCount; i++) {
+    const area = document.getElementById(`chapter-text-${i}`);
+    if (area) {
+      area.addEventListener('input', () => {
+        chapterTexts[i - 1] = area.value;
+        applyChapterTextsToStory();
+      });
+    }
+  }
+
+  elChapterEditor.querySelectorAll('[data-regenerate]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.getAttribute('data-regenerate'), 10);
+      await regenerateOneChapter(idx, false, btn);
+    });
+  });
+
+  elChapterEditor.querySelectorAll('[data-regenerate-tail]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.getAttribute('data-regenerate-tail'), 10);
+      await regenerateOneChapter(idx, true, btn);
+    });
+  });
+}
+
+function parseChapterTexts(fullText) {
+  const markers = CHAPTER_TITLES.map(t => `【${t}】`);
+  const positions = markers
+    .map(m => ({ marker: m, idx: fullText.indexOf(m) }))
+    .filter(x => x.idx >= 0)
+    .sort((a, b) => a.idx - b.idx);
+
+  if (positions.length < 3) return [];
+  const out = [];
+  for (let i = 0; i < positions.length; i++) {
+    const start = positions[i].idx + positions[i].marker.length;
+    const end = i < positions.length - 1 ? positions[i + 1].idx : fullText.length;
+    out.push(fullText.slice(start, end).trim());
+  }
+  return out;
+}
+
+function applyChapterTextsToStory() {
+  if (chapterTexts.length < 3) return;
+  const lines = [];
+  for (let i = 0; i < chapterTexts.length; i++) {
+    lines.push(`【${CHAPTER_TITLES[i] || `第${i + 1}章`}】`);
+    lines.push((chapterTexts[i] || '').trim());
+    if (i < chapterTexts.length - 1) lines.push('');
+  }
+  lastFullStory = lines.join('\n');
+  elFullText.textContent = lastFullStory;
+}
+
+async function regenerateOneChapter(chapterIndex, rebuildFollowing, btn) {
+  if (!lastResult || chapterTexts.length < 3) return;
+  if (!CONFIG.GAS_URL) throw new Error('GAS_URL が設定されていません');
+
+  const status = document.getElementById(`chapter-status-${chapterIndex}`);
+  btn.disabled = true;
+  if (status) status.textContent = rebuildFollowing ? 'この章以降を再生成中…' : 'この章を再生成中…';
+
+  try {
+    const res = await fetch(CONFIG.GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({
+        action: 'regenerate_chapter',
+        synopsis: lastResult.synopsis,
+        charas: lastResult.charas,
+        hint: elWeaveHint.value.trim(),
+        chapterIndex,
+        rebuildFollowing,
+        currentChapters: chapterTexts,
+      }),
+      redirect: 'follow',
+    });
+    if (!res.ok) throw new Error(`サーバーエラー (HTTP ${res.status})`);
+    const data = await parseGasResponse(res);
+    if (data.error) throw new Error(data.error);
+
+    chapterTexts = Array.isArray(data.chapterTexts)
+      ? data.chapterTexts.map(t => String(t || ''))
+      : chapterTexts;
+    if (Array.isArray(data.checklist)) {
+      lastChecklist = data.checklist;
+      renderChecklist();
+    }
+    applyChapterTextsToStory();
+    renderChapterEditor();
+    const newStatus = document.getElementById(`chapter-status-${chapterIndex}`);
+    if (newStatus) {
+      newStatus.textContent = rebuildFollowing
+        ? 'この章以降を再生成しました'
+        : 'この章を再生成しました（必要なら後続章も再生成）';
+    }
+  } catch (e) {
+    if (status) status.textContent = '失敗: ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderChecklist() {
+  const panel = document.getElementById('debug-checklist-panel');
+  const body  = document.getElementById('debug-checklist-body');
+  if (!panel || !body) return;
+  if (!lastChecklist || lastChecklist.length === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = '';
+  body.innerHTML = lastChecklist.map(item => {
+    const st   = item.status || 'pending';
+    const note = item.note ? `<span class="foreshadow-note">（${item.note}）</span>` : '';
+    const label = st === 'resolved' ? '✅ 回収済' : st === 'partial' ? '🔶 一部' : '⬜ 未回収';
+    return `<div class="debug-checklist-item">
+      <span class="foreshadow-badge ${st}">${label}</span>
+      <span>${item.id}. ${item.item}${note}</span>
+    </div>`;
+  }).join('');
 }
 
 elWeaveBtn.addEventListener('click', weaveStory);
@@ -899,6 +1285,11 @@ elCopyBtn.addEventListener('click', () => {
 // ═══════════════════════════════════════════════════════
 //  リセット
 // ═══════════════════════════════════════════════════════
+elKeywordReset.addEventListener('click', () => {
+  document.querySelectorAll('.kw-grid input').forEach(el => { el.checked = false; });
+  updatePreview();
+});
+
 elResetBtn.addEventListener('click', () => {
   document.querySelectorAll('.kw-grid input').forEach(el => { el.checked = false; });
   elUserName.value = '';
@@ -906,8 +1297,10 @@ elResetBtn.addEventListener('click', () => {
   lastPrompt = null;
   lastFullStory  = null;
   lastWeavePrompt = null;
+  chapterTexts = [];
   elWeaveHint.value = '';
   elFullArea.classList.remove('visible');
+  hideChapterEditor();
   elWeaveErr.classList.remove('visible');
   hideResult();
   hideError();

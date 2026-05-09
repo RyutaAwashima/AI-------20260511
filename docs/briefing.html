@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>スタッフ向けブリーフィング｜AIで物語を作ろう</title>
+<style>
+  /* ─── 印刷共通リセット ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Hiragino Sans', 'Meiryo', 'MS Gothic', sans-serif;
+    font-size: 11pt;
+    color: #111;
+    background: #fff;
+    line-height: 1.75;
+  }
+
+  /* ─── ページレイアウト ─── */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    padding: 14mm 16mm 14mm;
+  }
+
+  /* ─── ヘッダー ─── */
+  .doc-header {
+    border-bottom: 2.5px solid #222;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+  }
+  .doc-header .doc-label {
+    font-size: 8pt;
+    letter-spacing: 0.15em;
+    color: #666;
+    margin-bottom: 2px;
+  }
+  .doc-header h1 {
+    font-size: 17pt;
+    font-weight: 900;
+    line-height: 1.2;
+  }
+  .doc-header .meta {
+    font-size: 8.5pt;
+    color: #555;
+    margin-top: 4px;
+  }
+
+  /* ─── セクション ─── */
+  section {
+    margin-bottom: 18px;
+  }
+  section h2 {
+    font-size: 11pt;
+    font-weight: 900;
+    background: #222;
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ─── 基本情報テーブル ─── */
+  .info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5pt;
+  }
+  .info-table td {
+    padding: 5px 8px;
+    border: 1px solid #bbb;
+    vertical-align: top;
+  }
+  .info-table td:first-child {
+    width: 30%;
+    font-weight: bold;
+    background: #f2f2f2;
+    white-space: nowrap;
+  }
+
+  /* ─── タイムライン ─── */
+  .timeline {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10.5pt;
+  }
+  .timeline th {
+    background: #444;
+    color: #fff;
+    padding: 4px 8px;
+    font-weight: bold;
+    text-align: left;
+  }
+  .timeline td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #ddd;
+    vertical-align: top;
+  }
+  .timeline tr:nth-child(even) td { background: #f9f9f9; }
+  .timeline .time { white-space: nowrap; font-weight: bold; width: 10%; }
+  .timeline .dur  { white-space: nowrap; color: #555;      width: 8%; }
+  .timeline .who  { white-space: nowrap; font-size: 9pt;   width: 14%; }
+  .timeline .note { font-size: 9pt; color: #444; }
+
+  /* ─── ロール ─── */
+  .role-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .role-card {
+    border: 1px solid #bbb;
+    border-radius: 4px;
+    padding: 8px 10px;
+  }
+  .role-card .rc-title {
+    font-weight: bold;
+    font-size: 10pt;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
+    margin-bottom: 5px;
+  }
+  .role-card ul {
+    padding-left: 16px;
+    font-size: 9.5pt;
+  }
+  .role-card li { margin-bottom: 2px; }
+
+  /* ─── フロー図（テキストベース） ─── */
+  .flow-text {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    flex-wrap: wrap;
+    font-size: 9.5pt;
+  }
+  .flow-box {
+    border: 1px solid #999;
+    border-radius: 4px;
+    padding: 6px 10px;
+    text-align: center;
+    background: #f5f5f5;
+    min-width: 88px;
+  }
+  .flow-box .fb-step { font-size: 8pt; color: #666; display: block; }
+  .flow-box .fb-name { font-weight: bold; font-size: 10pt; }
+  .flow-box .fb-desc { font-size: 8pt; color: #555; margin-top: 2px; }
+  .flow-arr {
+    font-size: 14pt;
+    color: #888;
+    padding: 6px 4px 0;
+    flex-shrink: 0;
+  }
+
+  /* ─── 注意事項・callout ─── */
+  .callout {
+    border-left: 4px solid #555;
+    background: #f5f5f5;
+    padding: 7px 12px;
+    margin-top: 8px;
+    font-size: 10pt;
+    border-radius: 0 4px 4px 0;
+  }
+  .callout.care {
+    border-left-color: #333;
+    background: #efefef;
+  }
+  .callout strong { font-weight: bold; }
+
+  /* ─── チェックリスト ─── */
+  .checklist {
+    list-style: none;
+    padding: 0;
+    font-size: 10.5pt;
+  }
+  .checklist li {
+    padding: 4px 0;
+    border-bottom: 1px dotted #ccc;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .chk {
+    width: 14px; height: 14px;
+    border: 1.5px solid #555;
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 3px;
+    display: inline-block;
+  }
+
+  /* ─── 2カラム ─── */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  /* ─── Q&A ─── */
+  .qa-item { margin-bottom: 8px; }
+  .qa-q { font-weight: bold; font-size: 10pt; }
+  .qa-a { font-size: 10pt; color: #333; padding-left: 8px; }
+
+  /* ─── フッター ─── */
+  .doc-footer {
+    border-top: 1px solid #bbb;
+    padding-top: 6px;
+    font-size: 8pt;
+    color: #777;
+    text-align: center;
+    margin-top: 24px;
+  }
+
+  /* ─── 印刷設定 ─── */
+  @media print {
+    body { font-size: 10.5pt; }
+    .page { margin: 0; padding: 10mm 14mm; }
+    @page { size: A4; margin: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ヘッダー -->
+  <div class="doc-header">
+    <div class="doc-label">スタッフ向け ブリーフィング資料　※社外秘</div>
+    <h1>「AIで物語を作ろう」 当日スタッフの手引き</h1>
+    <div class="meta">2026年5月11日（月）｜ふれあいタイム｜担当：______________</div>
+  </div>
+
+  <!-- ① 活動概要 -->
+  <section>
+    <h2>① 活動のねらいと概要</h2>
+    <table class="info-table">
+      <tr>
+        <td>活動名</td>
+        <td>AIで物語を作ろう（Mythos プロジェクト体験）</td>
+      </tr>
+      <tr>
+        <td>所要時間</td>
+        <td>45分</td>
+      </tr>
+      <tr>
+        <td>参加者</td>
+        <td>10名以内（不登校の児童・生徒）</td>
+      </tr>
+      <tr>
+        <td>スタッフ数</td>
+        <td>5名程度</td>
+      </tr>
+      <tr>
+        <td>機材</td>
+        <td>PC・Wi-Fi環境：担当者が用意（参加者は持参不要）</td>
+      </tr>
+      <tr>
+        <td>ひとことで言うと</td>
+        <td>
+          キーワードをいくつか選ぶだけで、AIが自動でオリジナルの物語を作ってくれる。
+          最終的に「自分だけのノベルゲーム」がブラウザ上で遊べる状態になる体験活動です。
+        </td>
+      </tr>
+      <tr>
+        <td>指導者のねらい</td>
+        <td>
+          「自分のアイデアがデジタルの形になる」という体験を通して、
+          <strong>AIやツールを使えば自分でも何かを作れるかもしれない</strong>という感覚を持ち帰ってほしい。
+          技術的な知識はなくてもOK。「楽しかった」で十分。
+        </td>
+      </tr>
+    </table>
+  </section>
+
+  <!-- ② 使うツールの説明 -->
+  <section>
+    <h2>② 今日使うツールについて</h2>
+    <div class="flow-text">
+      <div class="flow-box">
+        <span class="fb-step">Step 1</span>
+        <div class="fb-name">📝 Aria</div>
+        <div class="fb-desc">物語を作るアプリ</div>
+      </div>
+      <div class="flow-arr">→</div>
+      <div class="flow-box">
+        <span class="fb-step">Step 2</span>
+        <div class="fb-name">📜 Canon</div>
+        <div class="fb-desc">ゲームに変換するアプリ</div>
+      </div>
+      <div class="flow-arr">→</div>
+      <div class="flow-box">
+        <span class="fb-step">Step 3</span>
+        <div class="fb-name">🎮 Sonnet</div>
+        <div class="fb-desc">ゲームをプレイするアプリ</div>
+      </div>
+      <div class="flow-arr">→</div>
+      <div class="flow-box">
+        <span class="fb-step">裏側</span>
+        <div class="fb-name">📊 スプシ</div>
+        <div class="fb-desc">作品を自動保存する</div>
+      </div>
+    </div>
+
+    <table class="info-table" style="margin-top:12px;">
+      <tr>
+        <td style="width:18%; white-space:nowrap;">📝 Aria（アリア）</td>
+        <td>
+          <strong>物語を自動で書いてくれるアプリ。</strong><br>
+          「ジャンル・舞台・登場人物・テーマ」などのキーワードを画面上のボタンで選ぶだけで、
+          AIがオリジナルのあらすじと長編ストーリー本文を自動生成する。
+        </td>
+      </tr>
+      <tr>
+        <td>📜 Canon（カノン）</td>
+        <td>
+          <strong>物語をノベルゲームの形に変換するアプリ。</strong><br>
+          Aria で保存したデータを一覧から選んで読み込むと、AI がセリフや場面切り替えを含む
+          「ゲームシナリオ」に自動変換する。
+        </td>
+      </tr>
+      <tr>
+        <td>🎮 Sonnet（ソネット）</td>
+        <td>
+          <strong>できあがった作品をノベルゲームとして遊ぶアプリ。</strong><br>
+          タイトル画面で「スプシからストーリーを読み込む」を選ぶと、自分が作った作品が
+          一覧に表示される。選択すると画面・セリフ・BGMが切り替わる本格的な
+          ノベルゲーム形式でプレイできる。クリック or タップで読み進む。
+        </td>
+      </tr>
+      <tr>
+        <td>📊 スプシ</td>
+        <td>
+          <strong>Google スプレッドシート（裏側のデータ保管場所）。</strong><br>
+          参加者が直接操作することはない。Aria・Canon・Sonnet の 3 アプリが
+          すべて同じスプシを通してデータをやり取りしているため、
+        </td>
+      </tr>
+    </table>
+
+    <div class="callout" style="margin-top:10px;">
+      <strong>スタッフが覚えておくこと：</strong>
+      3つのアプリはすべてブラウザ（Chrome推奨）で動きます。インストール不要。
+      「Aria → Canon → Sonnet」の順番さえ押さえておけば大丈夫です。
+      技術的なエラーが出た場合はリードか技術担当に声をかけてください。
+    </div>
+  </section>
+
+  <!-- ③ 活動の流れ -->
+  <section>
+    <h2>③ 当日のタイムライン（目安）</h2>
+    <table class="timeline">
+      <thead>
+        <tr>
+          <th class="time">時間</th>
+          <th class="dur">目安</th>
+          <th>内容</th>
+          <th>スタッフへのひとこと</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="time">0:00</td>
+          <td class="dur">5分</td>
+          <td><strong>あいさつ・今日やることの説明</strong></td>
+          <td class="note">「難しくないよ」という安心感を最初に伝える</td>
+        </tr>
+        <tr>
+          <td class="time">0:05</td>
+          <td class="dur">15分</td>
+          <td><strong>Aria：キーワード選択 → あらすじ → 本文生成 → 保存</strong><br>
+            <span class="note">選ぶだけでAIが物語を書いてくれる。生成には10〜20秒ほどかかる</span>
+          </td>
+          <td class="note">「どのキーワードが好き？」と話しかけながら隣で一緒に楽しむ</td>
+        </tr>
+        <tr>
+          <td class="time">0:20</td>
+          <td class="dur">10分</td>
+          <td><strong>Canon：ノベルゲームに変換</strong><br>
+            <span class="note">保存した物語を読み込み、キャラや背景を選ぶと自動でゲーム形式になる</span>
+          </td>
+          <td class="note">「どのキャラにする？」など選択の会話を楽しむ</td>
+        </tr>
+        <tr>
+          <td class="time">0:30</td>
+          <td class="dur">10分</td>
+          <td><strong>Sonnet：自分の作品をプレイ！</strong><br>
+            <span class="note">クラウドから自分の作品を読み込んで実際にプレイする</span>
+          </td>
+          <td class="note">「これ全部あなたが作ったんだよ」と達成感を一緒に味わう</td>
+        </tr>
+        <tr>
+          <td class="time">0:40</td>
+          <td class="dur">5分</td>
+          <td><strong>まとめ・振り返り・アンケート</strong></td>
+          <td class="note">感想を聞く。アンケートのQRを見せて任意回答</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ④ 参加者への関わり方 -->
+  <section>
+    <h2>④ 参加者への関わり方</h2>
+    <div class="callout care">
+      参加者は不登校の経験を持つ子どもたちです。「できる・できない」より<strong>一緒に楽しむ</strong>場を大切に。
+      途中でやめたい子は「見てるだけでもいいよ」でOK。様子が気になる子はリードに共有してください。
+    </div>
+  </section>
+
+  <!-- ⑤ よくある質問・トラブル -->
+  <section>
+    <h2>⑤ よくある質問とトラブル対応</h2>
+    <div class="two-col">
+      <div>
+        <div class="qa-item">
+          <div class="qa-q">Q. 物語の生成に時間がかかっている</div>
+          <div class="qa-a">→ 通常10〜20秒ほどかかります。「AIが考え中だよ」と伝えて待ちましょう。1分以上かかる場合は技術担当へ。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q. 「通信エラー」と表示された</div>
+          <div class="qa-a">→ ページをリロード（F5またはブラウザの更新ボタン）してもう一度試してください。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q. 画面が動かなくなった</div>
+          <div class="qa-a">→ ページを更新する。それでも直らなければ技術担当またはリードを呼ぶ。</div>
+        </div>
+      </div>
+      <div>
+        <div class="qa-item">
+          <div class="qa-q">Q. 「自分でやってみたい」と言われたら？</div>
+          <div class="qa-a">→ 大歓迎！ガイドのURL（guide.html）を見せてあげてください。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q. 「自分もこういうの作れる？」と聞かれたら？</div>
+          <div class="qa-a">→ 「作れるよ！今日使ったツールは全部無料で使えるし、AIが手伝ってくれるから」と伝えてOKです。</div>
+        </div>
+        <div class="qa-item">
+          <div class="qa-q">Q. やりたくない・参加したくない様子の子がいる</div>
+          <div class="qa-a">→ 無理に誘わず「見てるだけでもいいよ」と声をかける。リードに共有する。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- フッター -->
+  <div class="doc-footer">
+    「AIで物語を作ろう（Mythos Project）」スタッフ向けブリーフィング ｜ 2026年5月｜担当者のみ配布
+  </div>
+
+</div>
+</body>
+</html>
