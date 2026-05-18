@@ -523,6 +523,9 @@
 
   <!-- ヘッダー -->
   <div class="header">
+    <a href="../guide.html" id="home-link"
+       onclick="(function(e){var G='https://script.google.com/macros/s/AKfycbyh_9U-IyqSzLkDPb8OZwg_mlYidabUA1j4fli5MLTj_4_945WGoI-bpHiRH-ybUM2j/exec';var h=window.location.host;if(h.endsWith('script.google.com')||h.endsWith('googleusercontent.com')){e.preventDefault();try{window.top.location.href=G;}catch(ex){window.location.href=G;}}})(event)"
+       style="display:inline-block;color:#556;font-size:11.5px;text-decoration:none;padding:3px 10px;border-radius:6px;border:1px solid #223;margin-bottom:10px;transition:color .15s;">🏠 ガイドへ</a>
     <div class="badge">第1回 ／ 全3回シリーズ</div>
     <h1>✨ AIで物語を作ろう</h1>
     <p>キーワードを選ぶだけで、Gemini がストーリーを作ってくれるよ！</p>
@@ -718,7 +721,7 @@
 const CONFIG = {
   // GAS Web App の URL をここに貼る
   // 例: 'https://script.google.com/macros/s/AKfycb.../exec'
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzdSAoFA7G9ByUdbQDqDIUcDTn4iCI-vhD37BSJFK2CMzO7awdY_kz1j3SZdjnW8eXv/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbyh_9U-IyqSzLkDPb8OZwg_mlYidabUA1j4fli5MLTj_4_945WGoI-bpHiRH-ybUM2j/exec',
 };
 
 // ═══════════════════════════════════════════════════════
@@ -1346,6 +1349,21 @@ function hideError() {
 function esc(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+
+// GASから配信された場合はホームリンクをexec URLのguideデフォルトに切り替え
+(function(){
+  var GAS_EXEC = 'https://script.google.com/macros/s/AKfycbyh_9U-IyqSzLkDPb8OZwg_mlYidabUA1j4fli5MLTj_4_945WGoI-bpHiRH-ybUM2j/exec';
+  const a = document.getElementById('home-link');
+  if (!a) return;
+  const h = window.location.host;
+  if (h.endsWith('script.google.com') || h.endsWith('googleusercontent.com')) {
+    a.href = GAS_EXEC;
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      window.location.href = GAS_EXEC;
+    });
+  }
+})();
 </script>
 </body>
 </html>

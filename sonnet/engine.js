@@ -5,7 +5,7 @@
 
 // ── クラウド設定（GASからストーリーを読み込む場合に設定） ──
 const CLOUD_CONFIG = {
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzdSAoFA7G9ByUdbQDqDIUcDTn4iCI-vhD37BSJFK2CMzO7awdY_kz1j3SZdjnW8eXv/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbyh_9U-IyqSzLkDPb8OZwg_mlYidabUA1j4fli5MLTj_4_945WGoI-bpHiRH-ybUM2j/exec',
 };
 
 const Engine = (() => {
@@ -187,7 +187,10 @@ const Engine = (() => {
     // 背景・BGM適用
     const bgData = story.meta.assets.backgrounds[scene.background];
     Renderer.setBackground(scene.background, bgData);
-    if (scene.bgm) Audio.play(scene.bgm);
+    if (scene.bgm) {
+      const bgmData = story.meta.assets.bgm ? story.meta.assets.bgm[scene.bgm] : null;
+      Audio.play(scene.bgm, bgmData);
+    }
 
     devUpdate({ scene: scene.id, bgm: scene.bgm || '—' });
     processLine();
@@ -226,7 +229,7 @@ const Engine = (() => {
       }
 
       case 'bgm_change':
-        Audio.play(line.bgm);
+        Audio.play(line.bgm, story.meta.assets.bgm ? story.meta.assets.bgm[line.bgm] : null);
         devUpdate({ bgm: line.bgm });
         lineIndex++;
         processLine();

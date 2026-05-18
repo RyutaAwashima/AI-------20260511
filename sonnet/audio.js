@@ -7,6 +7,7 @@
 const Audio = (() => {
   let ctx = null;
   let currentNodes = [];
+  let currentMedia = null;
   let currentBgm = null;
 
   // BGM定義（Web Audio APIでシンプルなトーンを合成）
@@ -132,17 +133,67 @@ const Audio = (() => {
   function stop() {
     currentNodes.forEach(n => { try { n.stop(); } catch(e) {} });
     currentNodes = [];
+    if (currentMedia) {
+      try { currentMedia.pause(); } catch (e) {}
+      currentMedia.src = '';
+      currentMedia = null;
+    }
     currentBgm = null;
   }
 
-  function play(bgmKey) {
+  function play(bgmKey, bgmData) {
     if (bgmKey === currentBgm) return;
-    ensureContext();
     stop();
-    if (BGM_PATTERNS[bgmKey]) {
-      currentNodes = BGM_PATTERNS[bgmKey](ctx);
+
+    // bgmData は { id, name, url } オブジェクト、または文字列（旧形式・ローカルストーリー）
+    const isObj = bgmData && typeof bgmData === 'object';
+    const bgmId = isObj ? (bgmData.id || bgmKey) : bgmKey;
+
+    // 明示的URLがあれば最優先で再生
+    const explicitUrl = isObj ? String(bgmData.url || '').trim() : '';
+    if (explicitUrl) {
+      const el = new window.Audio(explicitUrl);
+      el.loop = bgmData.loop !== false;
+      if (typeof bgmData.volume === 'number') {
+        const v = Number(bgmData.volume);
+        el.volume = Math.max(0, Math.min(1, isNaN(v) ? 0.8 : v));
+      } else {
+        el.volume = 0.8;
+      }
+      currentMedia = el;
       currentBgm = bgmKey;
+      el.play().catch(() => {
+        currentMedia = null;
+        ensureContext();
+        if (BGM_PATTERNS[bgmId]) {
+          currentNodes = BGM_PATTERNS[bgmId](ctx);
+          currentBgm = bgmKey;
+        }
+      });
+      return;
     }
+
+    ensureContext();
+
+    // デフォルトの Web Audio パターン（eerie / action などのキー名）
+    if (BGM_PATTERNS[bgmId]) {
+      currentNodes = BGM_PATTERNS[bgmId](ctx);
+      currentBgm = bgmKey;
+      return;
+    }
+
+    // bgmId を Google Drive ファイルIDとしてストリーム再生
+    const driveUrl = `https://drive.google.com/uc?export=open&id=${encodeURIComponent(bgmId)}`;
+    const el = new window.Audio(driveUrl);
+    el.loop = true;
+    el.volume = 0.8;
+    currentMedia = el;
+    currentBgm = bgmKey;
+    el.play().catch(err => {
+      console.warn('[Audio] BGM再生失敗:', bgmId, err);
+      currentMedia = null;
+      currentBgm = null;
+    });
   }
 
   return { play, stop };

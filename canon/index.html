@@ -196,6 +196,21 @@
       transition: border-color 0.15s, color 0.15s;
     }
     .add-chara-btn:hover { border-color: #7e57c2; color: #b39ddb; }
+    .chara-edit-card .sprite-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      font-size: 11.5px;
+      color: #889;
+      flex-wrap: wrap;
+    }
+    .chara-edit-card .sprite-thumb {
+      height: 38px;
+      border-radius: 4px;
+      object-fit: cover;
+      display: none;
+      border: 1px solid #2a2a50;
+    }
 
     /* チップ選択 */
     .chip-grid { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -320,6 +335,9 @@
 
   <!-- ヘッダー -->
   <div class="header">
+    <a href="../guide.html" id="home-link"
+       onclick="(function(e){var G='https://script.google.com/macros/s/AKfycbyh_9U-IyqSzLkDPb8OZwg_mlYidabUA1j4fli5MLTj_4_945WGoI-bpHiRH-ybUM2j/exec';var h=window.location.host;if(h.endsWith('script.google.com')||h.endsWith('googleusercontent.com')){e.preventDefault();try{window.top.location.href=G;}catch(ex){window.location.href=G;}}})(event)"
+       style="display:inline-block;color:#556;font-size:11.5px;text-decoration:none;padding:3px 10px;border-radius:6px;border:1px solid #223;margin-bottom:10px;transition:color .15s;">🏠 ガイドへ</a>
     <div class="badge">Mythos / Canon</div>
     <h1>📜 カノン — テキストをノベルゲームに仕立てるエディター</h1>
     <p>あらすじや小説をペーストするだけで、ソネットで遊べるノベルゲームJSONに変換するよ</p>
@@ -397,6 +415,17 @@
       <div class="chip-grid" id="bgm-chips"></div>
     </div>
 
+    <div style="margin-top:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+      <span style="font-size:11.5px;color:#667;font-weight:bold;white-space:nowrap;">Drive同期：</span>
+      <button class="action-btn cat-sync-btn" data-cat="bgm"    style="padding:6px 10px;">🎵 BGM</button>
+      <button class="action-btn cat-sync-btn" data-cat="bg"     style="padding:6px 10px;">🖼 背景</button>
+      <button class="action-btn cat-sync-btn" data-cat="sprite" style="padding:6px 10px;">🧑 スプライト</button>
+      <button class="action-btn cat-sync-btn" data-cat="se"     style="padding:6px 10px;">🔊 SE</button>
+      <button class="action-btn cat-sync-btn" data-cat="all"    style="padding:6px 10px;opacity:.75;">🔨 全て</button>
+      <button class="action-btn" id="btn-sync-presets"          style="padding:6px 10px;">🔄 同期のみ</button>
+      <span id="preset-sync-status" style="font-size:11.5px;color:#667;"></span>
+    </div>
+
     <div style="margin-top:14px;">
       <button class="primary-btn" id="btn-convert">🎼 ノベルJSONに変換する</button>
     </div>
@@ -440,14 +469,14 @@
 // ═══════════════════════════════════════════════════════
 const CONFIG = {
   // アリアと同じ GAS の URL を使う（extract / convert アクションを追加済み）
-  GAS_URL: 'https://script.google.com/macros/s/AKfycbzdSAoFA7G9ByUdbQDqDIUcDTn4iCI-vhD37BSJFK2CMzO7awdY_kz1j3SZdjnW8eXv/exec',
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbyh_9U-IyqSzLkDPb8OZwg_mlYidabUA1j4fli5MLTj_4_945WGoI-bpHiRH-ybUM2j/exec',
 };
 
 // ═══════════════════════════════════════════════════════
 //  プリセット定義
 //  ※ sonnet 側 (stories.js / audio.js / renderer.js) と同じ key を使用
 // ═══════════════════════════════════════════════════════
-const BG_PRESETS = {
+let BG_PRESETS = {
   classroom:    { label: '教室',           color: '#1e2a4a', accent: '#2a3a5a' },
   classroom_old:{ label: '廃校の教室',     color: '#1a1520', accent: '#2a2030' },
   rooftop:      { label: '屋上（夕暮れ）', color: '#2a1a0a', accent: '#3a2810' },
@@ -465,7 +494,7 @@ const BG_PRESETS = {
 };
 
 // audio.js の BGM_PATTERNS と同じ key
-const BGM_PRESETS = {
+let BGM_PRESETS = {
   eerie:      '不気味（低い唸り）',
   emotional:  '切ない（ピアノ風）',
   hopeful:    '希望（明るめ）',
@@ -476,6 +505,9 @@ const BGM_PRESETS = {
   dramatic:   'ドラマチック',
   action:     'アクション',
 };
+
+// スプライトプリセット（Driveから同期） [{id, group, expression, url}]
+let SPRITE_PRESETS = [];
 
 // renderer.js の EXPRESSION_FACES と同じ key
 const EXPRESSIONS = [
@@ -494,7 +526,7 @@ const CHARA_COLORS = [
 //  状態
 // ═══════════════════════════════════════════════════════
 let state = {
-  charas: [],          // [{ key, name, role, color, position }]
+  charas: [],          // [{ key, name, role, color, position, sprite }]
   selectedBgs: ['classroom'],
   selectedBgms: ['emotional'],
   resultJson: null,
@@ -598,6 +630,7 @@ async function extractCharacters() {
       role: c.role || '',
       color: CHARA_COLORS[i % CHARA_COLORS.length],
       position: i % 2 === 0 ? 'left' : 'right',
+      sprite: '',
     }));
 
     renderCharaGrid();
@@ -648,6 +681,24 @@ function parseExtractResponse(text) {
   return charas;
 }
 
+// ── スプライトグループ管理ヘルパー ──
+function getSpriteGroups() {
+  const groups = {};
+  SPRITE_PRESETS.forEach(s => {
+    if (!groups[s.group]) groups[s.group] = [];
+    groups[s.group].push(s);
+  });
+  return groups;
+}
+function buildSpritesMap(groupKey) {
+  const groups = getSpriteGroups();
+  const sprites = {};
+  if (groupKey && groups[groupKey]) {
+    groups[groupKey].forEach(s => { sprites[s.expression] = s.url; });
+  }
+  return sprites;
+}
+
 // ═══════════════════════════════════════════════════════
 //  STEP 2：キャラ編集UI
 // ═══════════════════════════════════════════════════════
@@ -669,12 +720,19 @@ function renderCharaGrid() {
           <option value="right" ${c.position==='right'?'selected':''}>右（R）</option>
         </select>
       </div>
+      <div class="sprite-row">
+        <span>スプライト:</span>
+        <select class="sprite-select"><option value="">（なし）</option></select>
+        <img class="sprite-thumb" src="" alt="" />
+      </div>
       <button class="delete-btn">× 削除</button>
       <input type="color" class="color-input" value="${c.color}" style="display:none;">
     `;
     const swatch    = card.querySelector('.swatch');
     const nameInput = card.querySelector('.name-input');
     const posSel    = card.querySelector('.pos-select');
+    const spriteSel = card.querySelector('.sprite-select');
+    const sprThumb  = card.querySelector('.sprite-thumb');
     const delBtn    = card.querySelector('.delete-btn');
     const colorInp  = card.querySelector('.color-input');
 
@@ -685,6 +743,32 @@ function renderCharaGrid() {
     });
     nameInput.addEventListener('input', () => { c.name = nameInput.value.trim(); });
     posSel.addEventListener('change', () => { c.position = posSel.value; });
+
+    // スプライト選択ドロップダウン
+    const sprGroupKeys = Object.keys(getSpriteGroups());
+    if (sprGroupKeys.length === 0) {
+      spriteSel.options[0].textContent = '（同期してください）';
+    } else {
+      sprGroupKeys.forEach(grp => {
+        const opt = document.createElement('option');
+        opt.value = grp;
+        opt.textContent = grp;
+        if (c.sprite === grp) opt.selected = true;
+        spriteSel.appendChild(opt);
+      });
+    }
+    function updateSprThumb(grp) {
+      const map = buildSpritesMap(grp);
+      const url = map.normal || Object.values(map)[0] || '';
+      sprThumb.src = url;
+      sprThumb.style.display = url ? 'inline' : 'none';
+    }
+    updateSprThumb(c.sprite);
+    spriteSel.addEventListener('change', () => {
+      c.sprite = spriteSel.value;
+      updateSprThumb(c.sprite);
+    });
+
     delBtn.addEventListener('click', () => {
       state.charas.splice(idx, 1);
       renderCharaGrid();
@@ -701,6 +785,7 @@ $('btn-add-chara').addEventListener('click', () => {
     role: '',
     color: CHARA_COLORS[i % CHARA_COLORS.length],
     position: i % 2 === 0 ? 'left' : 'right',
+    sprite: '',
   });
   renderCharaGrid();
 });
@@ -729,7 +814,7 @@ function renderBgmChips() {
   Object.entries(BGM_PRESETS).forEach(([key, label]) => {
     const chip = document.createElement('span');
     chip.className = 'chip' + (state.selectedBgms.includes(key) ? ' selected' : '');
-    chip.textContent = `${key}：${label}`;
+    chip.textContent = label;
     chip.addEventListener('click', () => {
       const i = state.selectedBgms.indexOf(key);
       if (i >= 0) state.selectedBgms.splice(i, 1);
@@ -740,9 +825,112 @@ function renderBgmChips() {
   });
 }
 
-// ═══════════════════════════════════════════════════════
-//  STEP 3 → STEP 4：ノベルJSONへ変換
-// ═══════════════════════════════════════════════════════
+// Drive上の asset_manifest.json から背景/BGM候補を同期
+$('btn-sync-presets').addEventListener('click', syncPresetsFromDrive);
+
+// カテゴリ別 Drive スキャン＆同期
+document.querySelectorAll('.cat-sync-btn').forEach(btn => {
+  btn.addEventListener('click', () => rebuildCategory(btn.dataset.cat));
+});
+
+async function rebuildCategory(cat) {
+  const status  = $('preset-sync-status');
+  const allBtns = [...document.querySelectorAll('.cat-sync-btn'), $('btn-sync-presets')];
+  allBtns.forEach(b => b.disabled = true);
+  const catLabel = { bgm: 'BGM', bg: '背景', sprite: 'スプライト', se: 'SE', all: '全て' }[cat] || cat;
+  status.textContent = `🔨 ${catLabel}をスキャン中…`;
+  status.style.color = '#667';
+  try {
+    const data = await callGas({ action: 'rebuild_manifest', category: cat });
+    const c = data.counts || {};
+    const scanned = (data.scannedFolders || []).filter(f => !f.skipped).map(f => f.name).join(', ');
+    status.textContent = `✅ ${catLabel}同期完了（BGM ${c.bgm||0} / 背景 ${c.backgrounds||0} / スプライト ${c.sprites||0}）[${scanned || 'フォルダなし'}] → プリセット反映中…`;
+    status.style.color = '#3b7f3b';
+    await syncPresetsFromDrive();
+  } catch (e) {
+    status.textContent = `⚠ ${catLabel}同期失敗: ` + e.message;
+    status.style.color = '#b55';
+    allBtns.forEach(b => b.disabled = false);
+  }
+}
+
+async function syncPresetsFromDrive() {
+  const status = $('preset-sync-status');
+  const btn = $('btn-sync-presets');
+  btn.disabled = true;
+  status.textContent = '同期中…';
+  status.style.color = '#667';
+  try {
+    const data = await callGas({ action: 'list_asset_presets' });
+    const p = data && data.presets ? data.presets : {};
+
+    if (Array.isArray(p.backgrounds) && p.backgrounds.length > 0) {
+      const nextBg = {};
+      p.backgrounds.forEach(item => {
+        const key = String(item.id || '').trim();
+        if (!key) return;
+        nextBg[key] = {
+          label: item.name || key,
+          color: item.color || '#1e2a4a',
+          accent: item.accent || '#2a3a5a',
+          imageUrl: item.url || '',
+        };
+      });
+      if (Object.keys(nextBg).length > 0) BG_PRESETS = nextBg;
+    }
+
+    if (Array.isArray(p.bgm) && p.bgm.length > 0) {
+      const nextBgm = {};
+      p.bgm.forEach(item => {
+        const key = String(item.id || '').trim();
+        if (!key) return;
+        nextBgm[key] = item.name || key;
+      });
+      if (Object.keys(nextBgm).length > 0) BGM_PRESETS = nextBgm;
+    }
+
+    if (Array.isArray(p.sprites) && p.sprites.length > 0) {
+      SPRITE_PRESETS = p.sprites.map(item => {
+        const id = String(item.id || '').trim();
+        if (!id || !item.url) return null;
+        const parts = id.split('_');
+        const typeLC = (parts[0] || '').toLowerCase();
+        let group;
+        if (item.character && item.character !== 'unknown') {
+          group = item.character;
+        } else if (typeLC === 'spr' || typeLC === 'sprite') {
+          // spr_girl_normal → group = "girl"
+          group = parts.slice(1, parts.length - 1).join('_') || parts[1] || id;
+        } else {
+          group = parts.slice(0, parts.length - 1).join('_') || id;
+        }
+        return { id, group, expression: item.expression || 'normal', url: item.url };
+      }).filter(Boolean);
+      renderCharaGrid(); // スプライト追加後、既存カードのドロップダウンを更新
+    }
+
+    // 選択済みが消えた場合は有効なキーに絞る
+    state.selectedBgs = state.selectedBgs.filter(k => BG_PRESETS[k]);
+    state.selectedBgms = state.selectedBgms.filter(k => BGM_PRESETS[k]);
+    if (state.selectedBgs.length === 0) state.selectedBgs = Object.keys(BG_PRESETS).slice(0, 1);
+    if (state.selectedBgms.length === 0) state.selectedBgms = Object.keys(BGM_PRESETS).slice(0, 1);
+
+    renderBgChips();
+    renderBgmChips();
+
+    const bgCount  = Object.keys(BG_PRESETS).length;
+    const bgmCount  = Object.keys(BGM_PRESETS).length;
+    const sprCount  = Object.keys(getSpriteGroups()).length;
+    status.textContent = `✅ 同期完了（背景 ${bgCount} / BGM ${bgmCount} / スプライト ${sprCount}種）`;
+    status.style.color = '#3b7f3b';
+  } catch (e) {
+    status.textContent = '⚠ 同期失敗: ' + e.message;
+    status.style.color = '#b55';
+  } finally {
+    btn.disabled = false;
+    document.querySelectorAll('.cat-sync-btn').forEach(b => b.disabled = false);
+  }
+}
 $('btn-convert').addEventListener('click', convertToNovel);
 
 async function convertToNovel() {
@@ -906,12 +1094,18 @@ function buildFinalJson(scenes) {
 
   const characters = {};
   state.charas.forEach(c => {
-    characters[c.key] = { name: c.name, color: c.color, emoji: '🙂' };
+    const spritesMap = buildSpritesMap(c.sprite);
+    characters[c.key] = {
+      name: c.name, color: c.color, emoji: '🙂',
+      ...(Object.keys(spritesMap).length > 0 ? { sprites: spritesMap } : {}),
+    };
   });
   const backgrounds = {};
   [...usedBgs].forEach(k => { if (BG_PRESETS[k]) backgrounds[k] = { ...BG_PRESETS[k] }; });
   const bgm = {};
-  [...usedBgms].forEach(k => { if (BGM_PRESETS[k]) bgm[k] = BGM_PRESETS[k]; });
+  [...usedBgms].forEach(k => {
+    if (BGM_PRESETS[k] !== undefined) bgm[k] = { id: k, name: BGM_PRESETS[k] };
+  });
 
   return {
     meta: {
@@ -1115,6 +1309,21 @@ function toKey(name, idx) {
 // 初期描画
 renderBgChips();
 renderBgmChips();
+
+// GASから配信された場合はホームリンクをexec URLのguideデフォルトに切り替え
+(function(){
+  var GAS_EXEC = 'https://script.google.com/macros/s/AKfycbyh_9U-IyqSzLkDPb8OZwg_mlYidabUA1j4fli5MLTj_4_945WGoI-bpHiRH-ybUM2j/exec';
+  const a = document.getElementById('home-link');
+  if (!a) return;
+  const h = window.location.host;
+  if (h.endsWith('script.google.com') || h.endsWith('googleusercontent.com')) {
+    a.href = GAS_EXEC;
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      window.location.href = GAS_EXEC;
+    });
+  }
+})();
 </script>
 </body>
 </html>

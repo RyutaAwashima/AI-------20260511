@@ -49,7 +49,7 @@ AIで物語を作ろう20260511/
 
 ### GAS（Google Apps Script）
 - **デプロイ済みURL**:  
-  `https://script.google.com/macros/s/AKfycbzdSAoFA7G9ByUdbQDqDIUcDTn4iCI-vhD37BSJFK2CMzO7awdY_kz1j3SZdjnW8eXv/exec`
+  `https://script.google.com/macros/s/AKfycbyh_9U-IyqSzLkDPb8OZwg_mlYidabUA1j4fli5MLTj_4_945WGoI-bpHiRH-ybUM2j/exec`
 - **使用モデル**: `gemini-2.5-flash-lite`
 - **スクリプトプロパティ（GAS側に設定済み）**:
   - `GEMINI_API_KEY` — Google AI Studio で取得したAPIキー

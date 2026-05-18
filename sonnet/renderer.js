@@ -50,8 +50,16 @@ const Renderer = (() => {
   // 背景
   function setBackground(bgKey, bgData) {
     if (!bgData) return;
-    elBg.style.background =
-      `linear-gradient(135deg, ${bgData.color} 0%, ${bgData.accent} 100%)`;
+    const color = bgData.color || '#111';
+    const accent = bgData.accent || '#222';
+    const imageUrl = String(bgData.imageUrl || bgData.url || '').trim();
+    if (imageUrl) {
+      elBg.style.background =
+        `linear-gradient(135deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.48) 100%), url("${imageUrl}") center / cover no-repeat`;
+    } else {
+      elBg.style.background =
+        `linear-gradient(135deg, ${color} 0%, ${accent} 100%)`;
+    }
   }
 
   // 立ち絵（プレースホルダー SVG）
@@ -83,10 +91,33 @@ const Renderer = (() => {
     `;
   }
 
+  function resolveSpriteUrl(charData, expression) {
+    if (!charData || typeof charData !== 'object') return '';
+    if (charData.sprites && typeof charData.sprites === 'object') {
+      const byExpr = String(charData.sprites[expression] || '').trim();
+      if (byExpr) return byExpr;
+      const normal = String(charData.sprites.normal || '').trim();
+      if (normal) return normal;
+    }
+    return String(charData.imageUrl || '').trim();
+  }
+
+  function makeSpriteHTML(charData, expression) {
+    const spriteUrl = resolveSpriteUrl(charData, expression);
+    if (spriteUrl) {
+      return `
+        <img class="sprite-illustration" src="${spriteUrl}" alt="${charData.name}" />
+        <span class="sprite-name" style="color:${charData.color || '#ddd'}">${charData.name}</span>
+        <span class="sprite-expression">${expression}</span>
+      `;
+    }
+    return makeSpriteSVG(charData, expression);
+  }
+
   function showSprite(position, charData, expression) {
     const el   = position === 'left' ? elSpriteL : elSpriteR;
     const body = position === 'left' ? elBodyL   : elBodyR;
-    body.innerHTML = makeSpriteSVG(charData, expression);
+    body.innerHTML = makeSpriteHTML(charData, expression);
     el.classList.remove('hidden', 'inactive');
   }
 

@@ -15,6 +15,8 @@ const GEMINI_API_KEY  = PropertiesService.getScriptProperties().getProperty('GEM
 const GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
 const SPREADSHEET_ID  = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
 const SHEET_NAME      = 'stories';
+const ASSET_MANIFEST_FILE_ID = PropertiesService.getScriptProperties().getProperty('ASSET_MANIFEST_FILE_ID');
+const ASSET_ROOT_FOLDER_ID   = PropertiesService.getScriptProperties().getProperty('ASSET_ROOT_FOLDER_ID');
 
 // ── CORS ヘッダー ─────────────────────────────────────
 function corsHeaders() {
@@ -30,11 +32,12 @@ function addCors(output) {
   return output;
 }
 
-// ── GET（疎通確認 + モデル一覧） ──────────────────────
+// ── GET（ブラウザ: HTMLページ配信 ／ API: 疎通確認 + モデル一覧） ──
 function doGet(e) {
-  const q = (e && e.parameter && e.parameter.q) || '';
+  const q    = (e && e.parameter && e.parameter.q)    || '';
+  const page = (e && e.parameter && e.parameter.page) || '';
 
-  // ?q=models のとき Gemini の利用可能モデル一覧を返す
+  // ── API モード（?q=xxx） ────────────────────────────
   if (q === 'models') {
     if (!GEMINI_API_KEY) {
       return ContentService.createTextOutput(
@@ -52,9 +55,34 @@ function doGet(e) {
     ).setMimeType(ContentService.MimeType.JSON);
   }
 
-  return ContentService.createTextOutput(
-    JSON.stringify({ status: 'ok', message: 'GAS proxy is running' })
-  ).setMimeType(ContentService.MimeType.JSON);
+  // ?q が何らかの値を持つ場合は JSON を返す（後方互換）
+  if (q) {
+    return ContentService.createTextOutput(
+      JSON.stringify({ status: 'ok', message: 'GAS proxy is running' })
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  // ── HTML モード（ブラウザアクセス）─────────────────
+  // GASプロジェクトに guide.html / aria.html / canon.html / sonnet.html を
+  // 追加しておくと、対応ページが配信される。
+  const validPages = { guide: true, aria: true, canon: true, sonnet: true };
+  const safePage = validPages[page] ? page : 'guide';
+
+  try {
+    return HtmlService
+      .createHtmlOutputFromFile(safePage)
+      .setTitle('AIで物語を作ろう')
+      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  } catch (_) {
+    // HTMLファイルがGASプロジェクトに未登録の場合はJSON案内を返す
+    return ContentService.createTextOutput(
+      JSON.stringify({
+        status: 'ok',
+        message: 'GAS proxy is running',
+        hint: `GASプロジェクトに ${safePage}.html を追加するとページが配信されます`,
+      })
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
 }
 
 // ── POST ─────────────────────────────────────────────
@@ -108,6 +136,14 @@ function doPost(e) {
     if (action === 'load_story') {
       // Sonnet連携: ノベルJSONを取得
       return handleLoadStory(body);
+    }
+    if (action === 'list_asset_presets') {
+      // Canon/Sonnet連携: Drive上のマニフェストからプリセット一覧を取得
+      return handleListAssetPresets(body);
+    }
+    if (action === 'rebuild_manifest') {
+      // Canon連携: Driveフォルダをスキャンしてマニフェストを自動生成
+      return handleRebuildManifest(body);
     }
     // 下位互換（旧story_storeシート）
     if (action === 'save_story') {
@@ -731,4 +767,354 @@ function handleLoadStory(body) {
   return ContentService.createTextOutput(
     JSON.stringify({ storyData })
   ).setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── アセットプリセット取得（Drive manifest） ───────────
+function handleListAssetPresets(body) {
+  const fileId = String((body && body.fileId) || ASSET_MANIFEST_FILE_ID || '').trim();
+  if (!fileId) {
+    return ContentService.createTextOutput(
+      JSON.stringify({
+        presets: { backgrounds: [], bgm: [], sprites: [], se: [] },
+        source: 'empty',
+        note: 'ASSET_MANIFEST_FILE_ID が未設定です',
+      })
+    ).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  let parsed;
+  try {
+    const text = DriveApp.getFileById(fileId).getBlob().getDataAsString('UTF-8');
+    parsed = JSON.parse(text);
+  } catch (e) {
+    throw new Error('asset_manifest.json の読み取りに失敗: ' + e.message);
+  }
+
+  return ContentService.createTextOutput(
+    JSON.stringify({
+      version: parsed && parsed.version ? String(parsed.version) : 'unknown',
+      presets: {
+        backgrounds: normalizeAssetArray(parsed && parsed.backgrounds),
+        bgm: normalizeAssetArray(parsed && parsed.bgm),
+        sprites: normalizeAssetArray(parsed && parsed.sprites),
+        se: normalizeAssetArray(parsed && parsed.se),
+      },
+      source: 'drive',
+      fileId,
+    })
+  ).setMimeType(ContentService.MimeType.JSON);
+}
+
+function normalizeAssetArray(list) {
+  if (!Array.isArray(list)) return [];
+  return list
+    .map(function(item) {
+      const o = item && typeof item === 'object' ? item : {};
+      return {
+        id: String(o.id || '').trim(),
+        name: String(o.name || '').trim(),
+        tags: Array.isArray(o.tags) ? o.tags.map(function(t){ return String(t || '').trim(); }).filter(Boolean) : [],
+        url: String(o.url || o.imageUrl || '').trim(),
+        loop: o.loop,
+        volume: o.volume,
+        color: String(o.color || '').trim(),
+        accent: String(o.accent || '').trim(),
+        character: String(o.character || '').trim(),
+        expression: String(o.expression || '').trim(),
+      };
+    })
+    .filter(function(x) { return !!x.id; });
+}
+
+// ── Driveフォルダスキャン→マニフェスト自動生成 ───────
+function handleRebuildManifest(body) {
+  const rootFolderId = ASSET_ROOT_FOLDER_ID;
+  if (!rootFolderId) throw new Error('ASSET_ROOT_FOLDER_ID がスクリプトプロパティに未設定です。Drive の AI-Story-Assets フォルダIDを設定してください。');
+
+  const rootFolder = DriveApp.getFolderById(rootFolderId);
+
+  // category: 'bgm' | 'bg' | 'sprite' | 'se' | 'all'（デフォルト）
+  const requestedCat = String((body && body.category) || 'all').toLowerCase();
+  const isPartial = requestedCat !== 'all';
+
+  // 部分更新の場合、既存マニフェストをロードして他カテゴリを保持
+  let base = { bgm: [], se: [], sprites: [], backgrounds: [] };
+  if (isPartial) {
+    const storedId = PropertiesService.getScriptProperties().getProperty('ASSET_MANIFEST_FILE_ID');
+    if (storedId) {
+      try {
+        const text = DriveApp.getFileById(storedId).getBlob().getDataAsString('UTF-8');
+        const parsed = JSON.parse(text);
+        base = {
+          bgm:         Array.isArray(parsed.bgm)         ? parsed.bgm         : [],
+          se:          Array.isArray(parsed.se)           ? parsed.se          : [],
+          sprites:     Array.isArray(parsed.sprites)      ? parsed.sprites     : [],
+          backgrounds: Array.isArray(parsed.backgrounds)  ? parsed.backgrounds : [],
+        };
+      } catch(e) { /* ロード失敗時は全再構築にフォールバック */ }
+    }
+  }
+
+  const bgmEntries  = [];
+  const bgEntries   = [];
+  const sprEntries  = [];
+  const seEntries   = [];
+  const scannedFolders = []; // デバッグ用
+
+  /**
+   * フォルダ名からアセットカテゴリを判定（柔軟なキーワードマッチ）
+   * 対応例: 10_bgms / bgm / BGM / music / 20_backgrounds / bg / background
+   *         30_sprites / sprite / chara / 40_se / se / SE
+   */
+  function detectCategory(folderName) {
+    const n = folderName.toLowerCase();
+    // BGM を先にチェック（"bg" より優先）
+    if (n.indexOf('bgm') !== -1 || n.indexOf('music') !== -1 || n.indexOf('音楽') !== -1) return 'bgm';
+    if (n.indexOf('background') !== -1 || n.indexOf('背景') !== -1) return 'bg';
+    // 単体の "bg" または "20_bg" 等（bgm を含まない）
+    if (/(?:^|\d_)bg$/.test(n) || n === 'bg') return 'bg';
+    if (n.indexOf('sprite') !== -1 || n.indexOf('chara') !== -1 || n.indexOf('キャラ') !== -1 || n.indexOf('立ち絵') !== -1) return 'sprite';
+    if (n === 'se' || /(?:^|\d_)se$/.test(n) || n.indexOf('効果音') !== -1 || n.indexOf('sound') !== -1) return 'se';
+    return null;
+  }
+
+  function scanBgm(folder) {
+    // 直置きファイル
+    const fi = folder.getFiles();
+    while (fi.hasNext()) {
+      const f = fi.next();
+      const id = fileNameToId(f.getName());
+      if (!id) continue;
+      f.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+      bgmEntries.push({ id: id, name: extractLabel(f.getName()), tags: [],
+        url: driveUrl(f.getId()), loop: true, volume: 0.8 });
+    }
+    // サブフォルダ（タグ別）
+    const subIter = folder.getFolders();
+    while (subIter.hasNext()) {
+      const sub = subIter.next();
+      const tag = sub.getName();
+      const fi2 = sub.getFiles();
+      while (fi2.hasNext()) {
+        const f = fi2.next();
+        const id = fileNameToId(f.getName());
+        if (!id) continue;
+        f.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+        bgmEntries.push({ id: id, name: extractLabel(f.getName()), tags: [tag],
+          url: driveUrl(f.getId()), loop: true, volume: 0.8 });
+      }
+    }
+  }
+
+  function scanBg(folder) {
+    const fi = folder.getFiles();
+    while (fi.hasNext()) {
+      const f = fi.next();
+      const id = fileNameToId(f.getName());
+      if (!id) continue;
+      f.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+      bgEntries.push({ id: id, name: extractLabel(f.getName()), tags: [],
+        url: driveUrl(f.getId()), color: '#1e2a4a', accent: '#2a3a5a' });
+    }
+    const subIter = folder.getFolders();
+    while (subIter.hasNext()) {
+      const sub = subIter.next();
+      const tag = sub.getName();
+      const fi2 = sub.getFiles();
+      while (fi2.hasNext()) {
+        const f = fi2.next();
+        const id = fileNameToId(f.getName());
+        if (!id) continue;
+        f.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+        bgEntries.push({ id: id, name: extractLabel(f.getName()), tags: [tag],
+          url: driveUrl(f.getId()), color: '#1e2a4a', accent: '#2a3a5a' });
+      }
+    }
+  }
+
+  function scanSprite(folder) {
+    // サブフォルダ = キャラ名
+    const subIter = folder.getFolders();
+    while (subIter.hasNext()) {
+      const sub = subIter.next();
+      const charKey = sub.getName();
+      const fi = sub.getFiles();
+      while (fi.hasNext()) {
+        const f = fi.next();
+        const id = fileNameToId(f.getName());
+        if (!id) continue;
+        f.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+        const parts = id.split('_');
+        const expression = parts.length >= 3 ? parts[parts.length - 1] : 'normal';
+        sprEntries.push({ id: id, character: charKey, expression: expression,
+          url: driveUrl(f.getId()) });
+      }
+    }
+    // 直置きファイル
+    const fi = folder.getFiles();
+    while (fi.hasNext()) {
+      const f = fi.next();
+      const id = fileNameToId(f.getName());
+      if (!id) continue;
+      f.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+      const parts = id.split('_');
+      const expression = parts.length >= 2 ? parts[parts.length - 1] : 'normal';
+      sprEntries.push({ id: id, character: 'unknown', expression: expression,
+        url: driveUrl(f.getId()) });
+    }
+  }
+
+  function scanSe(folder) {
+    const fi = folder.getFiles();
+    while (fi.hasNext()) {
+      const f = fi.next();
+      const id = fileNameToId(f.getName());
+      if (!id) continue;
+      f.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+      seEntries.push({ id: id, name: extractLabel(f.getName()), url: driveUrl(f.getId()) });
+    }
+  }
+
+  // ルート直下の全サブフォルダをキーワードでカテゴリ判定してスキャン
+  const folderIter = rootFolder.getFolders();
+  while (folderIter.hasNext()) {
+    const folder = folderIter.next();
+    const folderName = folder.getName();
+    const cat = detectCategory(folderName);
+
+    // カテゴリ指定時は対象外フォルダをスキップ
+    if (isPartial && cat !== requestedCat) {
+      scannedFolders.push({ name: folderName, detected: cat || '(対象外)', skipped: true });
+      continue;
+    }
+
+    scannedFolders.push({ name: folderName, detected: cat || '(対象外)' });
+    if (cat === 'bgm')    scanBgm(folder);
+    if (cat === 'bg')     scanBg(folder);
+    if (cat === 'sprite') scanSprite(folder);
+    if (cat === 'se')     scanSe(folder);
+  }
+
+  // 部分更新: スキャンしなかったカテゴリは既存データを保持
+  const manifest = {
+    version: '1.0.0',
+    updatedAt: new Date().toISOString(),
+    bgm:         (!isPartial || requestedCat === 'bgm')    ? bgmEntries  : base.bgm,
+    se:          (!isPartial || requestedCat === 'se')     ? seEntries   : base.se,
+    sprites:     (!isPartial || requestedCat === 'sprite') ? sprEntries  : base.sprites,
+    backgrounds: (!isPartial || requestedCat === 'bg')     ? bgEntries   : base.backgrounds,
+  };
+
+  const newFileId = overwriteOrCreateManifest(rootFolder, JSON.stringify(manifest, null, 2));
+
+  return ContentService.createTextOutput(JSON.stringify({
+    ok: true,
+    fileId: newFileId,
+    category: requestedCat,
+    counts: { bgm: manifest.bgm.length, backgrounds: manifest.backgrounds.length,
+               sprites: manifest.sprites.length, se: manifest.se.length },
+    scannedFolders,
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/** ファイル名（拡張子付き）→ id文字列。空なら null。 */
+function fileNameToId(filename) {
+  const id = filename.replace(/\.[^/.]+$/, '').toLowerCase().replace(/\s+/g, '_');
+  return id || null;
+}
+
+/** id → 日本語ラベル風（アンダースコアをスペースに）*/
+function idToLabel(id) {
+  return id.replace(/_/g, ' ');
+}
+
+/**
+ * ファイル名から表示名を抽出。
+ * 命名規則 {type}_{tag}_{表示名}_{num}.ext の第3セグメントを返す。
+ * 例: bgm_action_戦いＰ０１_01.mp3 → "戦いＰ０１"
+ */
+function extractLabel(originalFilename) {
+  const base = originalFilename.replace(/\.[^/.]+$/, '');
+  const parts = base.split('_');
+  const typeLC = (parts[0] || '').toLowerCase();
+  if (['bgm', 'se'].includes(typeLC)) {
+    // bgm_{tag}_{表示名}_{num} → 3セグメント目を返す
+    if (parts.length >= 3) return parts[2];
+    if (parts.length === 2) return parts[1];
+  }
+  if (typeLC === 'bg') {
+    // bg_{name} または bg_{name1}_{name2}... → type以外を全部つなぐ
+    return parts.slice(1).join(' ');
+  }
+  if (typeLC === 'spr' || typeLC === 'sprite') {
+    // spr_{group}_{expression} → group部分を返す（最後のセグメント除く）
+    if (parts.length >= 3) return parts.slice(1, parts.length - 1).join(' ');
+    if (parts.length === 2) return parts[1];
+  }
+  return base.replace(/_/g, ' '); // fallback
+}
+
+/** Drive 直接ダウンロード URL */
+function driveUrl(fileId) {
+  return 'https://drive.google.com/uc?export=download&id=' + fileId;
+}
+
+/** asset_manifest.json を 00_docs/ に上書き作成し、スクリプトプロパティも更新 */
+function overwriteOrCreateManifest(rootFolder, content) {
+  const props = PropertiesService.getScriptProperties();
+
+  // 00_docs フォルダを探す or 作る
+  let docsFolder;
+  const docsFolderIter = rootFolder.getFoldersByName('00_docs');
+  if (docsFolderIter.hasNext()) {
+    docsFolder = docsFolderIter.next();
+  } else {
+    docsFolder = rootFolder.createFolder('00_docs');
+  }
+
+  // フォルダ内の既存ファイルをゴミ箱へ
+  const existingIter = docsFolder.getFilesByName('asset_manifest.json');
+  while (existingIter.hasNext()) { existingIter.next().setTrashed(true); }
+
+  // プロパティに保存済みのファイルIDがあれば念のためゴミ箱へ
+  const storedId = props.getProperty('ASSET_MANIFEST_FILE_ID');
+  if (storedId) {
+    try { DriveApp.getFileById(storedId).setTrashed(true); } catch(e) { /* 既に削除済み */ }
+  }
+
+  // 新規作成して公開設定
+  const newFile = docsFolder.createFile('asset_manifest.json', content, 'application/json');
+  newFile.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+
+  // スクリプトプロパティを自動更新（手動設定不要）
+  props.setProperty('ASSET_MANIFEST_FILE_ID', newFile.getId());
+
+  return newFile.getId();
+}
+
+/**
+ * 【権限付与用テスト関数】
+ * GASエディタからこの関数を「実行」すると Drive 書き込み権限の認可ダイアログが出る。
+ * 許可したあと、新しいデプロイを作成すれば Canon から呼べるようになる。
+ *
+ * ★ ASSET_ROOT_FOLDER_ID の有無に関わらず必ず Drive 書き込み操作を実行する。
+ *   （プロパティ未設定でも早期リターンしない）
+ */
+function authorizeAndTestRebuild() {
+  const rootFolderId = PropertiesService.getScriptProperties().getProperty('ASSET_ROOT_FOLDER_ID');
+
+  // フォルダIDがあればそのフォルダ、なければマイドライブルートで代用
+  const testFolder = rootFolderId
+    ? DriveApp.getFolderById(rootFolderId)
+    : DriveApp.getRootFolder();
+
+  Logger.log('テスト先フォルダ: ' + testFolder.getName());
+
+  // 書き込み権限テスト: 一時ファイルを作成→共有設定→ゴミ箱
+  const tmp = testFolder.createFile('_auth_test_.tmp', 'authorization test', 'text/plain');
+  tmp.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
+  tmp.setTrashed(true);
+
+  Logger.log('✅ Drive 書き込み権限 OK（作成・共有・削除すべて成功）');
+  Logger.log('次: デプロイ → 新しいデプロイ → ウェブアプリ → デプロイ → URLをコピー');
 }
