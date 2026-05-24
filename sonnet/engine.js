@@ -234,6 +234,8 @@ const Engine = (() => {
 
       case 'narration':
         waitingClick = false;
+        if (line.se)      Audio.playSE(line.se);
+        if (line.ambient !== undefined) Audio.playAmbient(line.ambient || null);
         Renderer.showNarration(line.text, () => { waitingClick = true; });
         break;
 
@@ -265,6 +267,9 @@ const Engine = (() => {
         // 現在の表情を記憶
         _onStageExpr[charKey] = line.expression;
 
+        if (line.se)      Audio.playSE(line.se);
+        if (line.ambient !== undefined) Audio.playAmbient(line.ambient || null);
+
         const slot = _getSlot(charKey);
         Renderer.showDialogue(charData, slot, line.expression, line.text, () => {
           waitingClick = true;
@@ -290,8 +295,10 @@ const Engine = (() => {
       case 'choice':
         inChoice = true;
         waitingClick = false;
+        Audio.playSE('sys_cursor_01');    // 選択肢出現 SE
         Renderer.showChoices(line.text, line.options, (nextId) => {
           inChoice = false;
+          Audio.playSE('sys_kettei_01'); // 選択確定 SE
           gotoScene(nextId);
         });
         break;

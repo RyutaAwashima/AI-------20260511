@@ -196,5 +196,71 @@ const Audio = (() => {
     });
   }
 
-  return { play, stop };
+  // ─────────────────────────────────────────────────────────────
+  // SE（効果音）― 単発再生
+  // ─────────────────────────────────────────────────────────────
+  const _seCache = {};   // id → HTMLAudioElement（インスタンス再利用）
+
+  function playSE(id, vol) {
+    if (!id) return;
+    const manifest = window.SE_MANIFEST || {};
+    const def = manifest[id];
+    if (!def) { console.warn('[Audio] SE not found:', id); return; }
+
+    // キャッシュから取得 or 生成
+    if (!_seCache[id]) {
+      _seCache[id] = new window.Audio(def.url);
+      _seCache[id].preload = 'auto';
+    }
+    const el = _seCache[id];
+    el.volume = typeof vol === 'number' ? Math.max(0, Math.min(1, vol)) : (def.vol ?? 0.5);
+    el.loop   = false;   // 単発SE は常に非ループ
+
+    // 再生中でも頭から再生
+    el.currentTime = 0;
+    el.play().catch(err => console.warn('[Audio] SE再生失敗:', id, err));
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // Ambient（環境音）― ループ再生・1チャンネル
+  // ─────────────────────────────────────────────────────────────
+  let _ambientEl    = null;
+  let _ambientId    = null;
+  const _ambientCache = {};
+
+  function playAmbient(id, vol) {
+    // null / '' / false → 停止
+    if (!id) { stopAmbient(); return; }
+    if (id === _ambientId) return;   // 同じ ambient は再生継続
+
+    stopAmbient();
+
+    const manifest = window.SE_MANIFEST || {};
+    const def = manifest[id];
+    if (!def) { console.warn('[Audio] Ambient not found:', id); return; }
+
+    if (!_ambientCache[id]) {
+      _ambientCache[id] = new window.Audio(def.url);
+      _ambientCache[id].preload = 'auto';
+    }
+    const el = _ambientCache[id];
+    el.volume = typeof vol === 'number' ? Math.max(0, Math.min(1, vol)) : (def.vol ?? 0.35);
+    el.loop   = true;
+    el.currentTime = 0;
+    el.play().catch(err => console.warn('[Audio] Ambient再生失敗:', id, err));
+
+    _ambientEl = el;
+    _ambientId = id;
+  }
+
+  function stopAmbient() {
+    if (_ambientEl) {
+      _ambientEl.pause();
+      _ambientEl.currentTime = 0;
+      _ambientEl = null;
+      _ambientId = null;
+    }
+  }
+
+  return { play, stop, playSE, playAmbient, stopAmbient };
 })();
