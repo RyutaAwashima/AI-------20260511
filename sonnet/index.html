@@ -254,7 +254,14 @@
       flex-direction: column;
       gap: 1.25cqw;
       width: 52.5cqw;         /* 420px */
+      max-height: 46cqw;      /* はみ出したらスクロール */
+      overflow-y: auto;
+      padding-right: 0.5cqw;
     }
+    #story-list::-webkit-scrollbar { width: 0.5cqw; }
+    #story-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); border-radius: 1cqw; }
+    #story-list::-webkit-scrollbar-thumb { background: rgba(92,107,192,0.45); border-radius: 1cqw; }
+    #story-list::-webkit-scrollbar-thumb:hover { background: rgba(159,168,218,0.7); }
     .story-btn {
       background: transparent;
       border: 0.125cqw solid rgba(92,107,192,0.5);
