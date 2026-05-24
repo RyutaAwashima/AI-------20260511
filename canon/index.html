@@ -1127,7 +1127,7 @@ async function convertToNovel() {
 
   try {
     const resp = await callGas({ action: 'convert', prompt });
-    const scenes = parseConvertResponse(resp.text);
+    const scenes = parseDSL(resp.text);
     if (scenes.length === 0) throw new Error('シーンを生成できませんでした。本文を増やすか、もう一度試してください。');
 
     state.resultJson = buildFinalJson(scenes);
@@ -1151,19 +1151,20 @@ function buildConvertPrompt() {
     .map(k => `- ${k}（${BGM_PRESETS[k].label}）`).join('\n');
 
   return [
-    '次の物語をサウンドノベル用のシーンスクリプトに変換してください。',
+    '次の物語をサウンドノベル用DSLスクリプトに変換してください。',
+    '',
+    '【DSL仕様】（以下の4命令のみ出力すること。JSONやHTMLは絶対に出力しない）',
+    '  S <bg_key> <bgm_key>          ← シーン区切り（背景キーとBGMキーを半角スペースで）',
+    '  N <地の文>                     ← ナレーション（Nの後はスペース1つで本文）',
+    '  D <キャラkey> <表情> <セリフ>  ← セリフ（key・表情・本文を半角スペース区切り）',
+    '  END                            ← ストーリー終端（最終行に1行のみ）',
     '',
     '【ルール】',
-    '- 物語を3〜6シーンに分け、各シーンは 4〜10 行で構成してください。',
-    '- 各行は次のいずれか1種類です：',
-    '  (1) ナレーション   ：N: ここに地の文',
-    '  (2) セリフ         ：D: <キャラkey> <表情> | ここにセリフ',
-    '  (3) シーン区切り   ：=== SCENE_END background:<bg_key> bgm:<bgm_key> ===',
-    '- セリフのキャラkey は下記「登場人物」のkeyのみ使用。',
-    '- 表情は次のいずれか：' + EXPRESSIONS.join(', '),
-    '- シーン冒頭で背景とBGMを指定。',
-    '- 物語の最後の行は必ず「=== END ===」を1行だけ。',
-    '- 余計な説明・前置きは出力しないこと。',
+    '- 物語を3〜6シーンに分け、各シーンを S 命令で始めること。',
+    '- 各シーンは4〜10行（N と D のみ）で構成。',
+    '- 表情は次のいずれか: ' + EXPRESSIONS.join(', '),
+    '- キャラkeyは【登場人物】のkeyのみ使用。',
+    '- 余計な説明・前置きは一切出力しないこと。',
     '',
     '【登場人物】',
     charLines,
@@ -1178,22 +1179,28 @@ function buildConvertPrompt() {
     text,
     '',
     '【出力例】',
-    '=== SCENE_END background:classroom bgm:eerie ===',
-    'N: 廃校になって三年。誰も近づかない場所だった。',
-    'D: haruka surprised | え……っ！？　誰！？',
-    'N: 風が窓を揺らした。',
-    '=== SCENE_END background:rooftop bgm:emotional ===',
-    'D: yui sad | ……来てくれて、ありがとう。',
-    '=== END ===',
+    'S bg_cafe daily',
+    'N 放課後のカフェ。静かな午後だった。',
+    'D haruka normal おはよう、今日もよろしくね。',
+    'D yui happy うん、よろしく！',
+    'S bg_rooftop tension',
+    'N 屋上の風は冷たかった。',
+    'D haruka sad ……ごめんね。',
+    'END',
   ].join('\n');
 }
 
-function parseConvertResponse(text) {
+// ─── DSL パーサー（新フォーマット + 旧フォーマット互換） ───
+// 新フォーマット:
+//   S <bg_key> <bgm_key>           シーン区切り
+//   N <地の文>                      ナレーション
+//   D <charKey> <表情> <セリフ>     セリフ
+//   END                            終端
+function parseDSL(text) {
   const charKeys = new Set(state.charas.map(c => c.key));
   const bgKeys   = new Set(state.selectedBgs);
   const bgmKeys  = new Set(state.selectedBgms);
 
-  // 1行ずつ処理。最初のSCENE_ENDが「シーン開始の宣言」を兼ねる。
   const lines = text.split(/\r?\n/);
   const scenes = [];
   let currentBg  = state.selectedBgs[0];
@@ -1213,29 +1220,58 @@ function parseConvertResponse(text) {
 
   for (let raw of lines) {
     const line = raw.trim();
-    if (!line) continue;
-    if (line.startsWith('```')) continue;
+    if (!line || line.startsWith('```') || line.startsWith('#')) continue;
 
-    // シーン区切り
-    const sceneMatch = line.match(/===\s*SCENE_END\s+background\s*:\s*(\w+)\s+bgm\s*:\s*(\w+)\s*===/i);
+    const tokens = line.split(/\s+/);
+    const cmd = tokens[0];
+
+    // ── 新DSLフォーマット ──
+    if (cmd === 'S') {
+      flush();
+      const bg  = tokens[1] || '';
+      const bgm = tokens[2] || '';
+      if (bgKeys.has(bg))   currentBg  = bg;
+      if (bgmKeys.has(bgm)) currentBgm = bgm;
+      continue;
+    }
+    if (cmd === 'END') { flush(); break; }
+    if (cmd === 'N') {
+      const txt = tokens.slice(1).join(' ').trim();
+      if (txt) buffer.push({ type: 'narration', text: txt });
+      continue;
+    }
+    if (cmd === 'D') {
+      const ck   = tokens[1] || '';
+      const expr = tokens[2] || 'normal';
+      const txt  = tokens.slice(3).join(' ').trim();
+      if (!charKeys.has(ck) || !txt) continue;
+      const chara = state.charas.find(c => c.key === ck);
+      buffer.push({
+        type: 'dialogue',
+        character: ck,
+        position: chara.position,
+        expression: EXPRESSIONS.includes(expr) ? expr : 'normal',
+        text: txt,
+      });
+      continue;
+    }
+
+    // ── 旧フォーマット互換 ──
+    const sceneMatch = line.match(/===\s*SCENE_END\s+background\s*:\s*(\w+)\s+bgm\s*:\s*(\w+)/i);
     if (sceneMatch) {
       flush();
       const bg = sceneMatch[1], bgm = sceneMatch[2];
-      currentBg  = bgKeys.has(bg)  ? bg  : currentBg;
-      currentBgm = bgmKeys.has(bgm) ? bgm : currentBgm;
+      if (bgKeys.has(bg))   currentBg  = bg;
+      if (bgmKeys.has(bgm)) currentBgm = bgm;
       continue;
     }
     if (/===\s*END\s*===/i.test(line)) { flush(); break; }
-
-    // ナレーション
     let m = line.match(/^N\s*[:：]\s*(.+)$/);
     if (m) { buffer.push({ type: 'narration', text: m[1].trim() }); continue; }
-
-    // セリフ
     m = line.match(/^D\s*[:：]\s*(\S+)\s+(\S+)\s*[|｜]\s*(.+)$/);
     if (m) {
       const [, ck, expr, txt] = m;
-      if (!charKeys.has(ck)) continue; // 不明なキャラはスキップ
+      if (!charKeys.has(ck)) continue;
       const chara = state.charas.find(c => c.key === ck);
       buffer.push({
         type: 'dialogue',
@@ -1246,11 +1282,9 @@ function parseConvertResponse(text) {
       });
       continue;
     }
-    // それ以外は無視（保険）
   }
   flush();
 
-  // scene_end で次シーンへ繋ぐ
   scenes.forEach((sc, i) => {
     if (i < scenes.length - 1) {
       sc.lines.push({ type: 'scene_end', next: scenes[i + 1].id });
