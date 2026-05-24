@@ -356,6 +356,111 @@
       margin-top: 10px;
     }
     .footer a { color: #5c4a8e; text-decoration: none; }
+
+    /* スプライトピッカーモーダル */
+    #sprite-picker-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.78);
+      z-index: 2000;
+      align-items: center;
+      justify-content: center;
+    }
+    #sprite-picker-overlay.open { display: flex; }
+    .sprite-picker {
+      background: #13132a;
+      border: 1px solid #2a2a50;
+      border-radius: 14px;
+      width: min(740px, 95vw);
+      max-height: 82vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+    }
+    .spr-picker-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 13px 18px;
+      border-bottom: 1px solid #2a2a50;
+      font-weight: bold;
+      color: #c5caf7;
+      font-size: 14px;
+    }
+    .spr-picker-close {
+      background: transparent;
+      border: none;
+      color: #667;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 6px;
+    }
+    .spr-picker-close:hover { color: #ef5350; }
+    .spr-picker-tabs {
+      display: flex;
+      gap: 5px;
+      padding: 10px 14px 6px;
+      overflow-x: auto;
+      flex-shrink: 0;
+      scrollbar-width: thin;
+    }
+    .spr-tab {
+      background: transparent;
+      border: 1px solid #2a2a50;
+      color: #889;
+      padding: 5px 11px;
+      border-radius: 16px;
+      font-size: 11.5px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .spr-tab:hover { border-color: #5c4a8e; color: #ccd; }
+    .spr-tab.active { background: #4a3578; border-color: #7e57c2; color: #fff; }
+    .spr-picker-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+      gap: 8px;
+      padding: 10px 14px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .spr-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      padding: 5px 3px;
+      transition: border-color 0.12s, background 0.12s;
+      background: #0a0a1f;
+    }
+    .spr-item:hover { border-color: #5c4a8e; background: #18183a; }
+    .spr-item.selected { border-color: #7e57c2; background: #2a1a50; }
+    .spr-item img { width: 76px; height: 96px; object-fit: contain; border-radius: 4px; }
+    .spr-item .spr-lbl {
+      font-size: 10px;
+      color: #889;
+      text-align: center;
+      line-height: 1.3;
+      max-width: 82px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .spr-picker-footer {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 10px 14px;
+      border-top: 1px solid #2a2a50;
+      gap: 8px;
+    }
   </style>
 </head>
 <body>
@@ -815,11 +920,17 @@ function getSpriteGroups() {
   });
   return groups;
 }
-function buildSpritesMap(groupKey) {
+function buildSpritesMap(spriteRef) {
+  if (!spriteRef) return {};
+  // 直接URL（carlmary またはピッカーで選択したもの）
+  if (spriteRef.includes('/') || spriteRef.endsWith('.png')) {
+    return { normal: spriteRef };
+  }
+  // グループキー（旧形式審ワンコンパット）
   const groups = getSpriteGroups();
   const sprites = {};
-  if (groupKey && groups[groupKey]) {
-    groups[groupKey].forEach(s => { sprites[s.expression] = s.url; });
+  if (groups[spriteRef]) {
+    groups[spriteRef].forEach(s => { sprites[s.expression] = s.url; });
   }
   return sprites;
 }
@@ -846,9 +957,10 @@ function renderCharaGrid() {
         </select>
       </div>
       <div class="sprite-row">
-        <span>スプライト:</span>
-        <select class="sprite-select"><option value="">（なし）</option></select>
+        <span>立ち絵:</span>
         <img class="sprite-thumb" src="" alt="" />
+        <button class="sprite-pick-btn action-btn" style="padding:4px 10px;font-size:11px;">🖼️ 選ぶ</button>
+        <button class="sprite-clear-btn action-btn" style="padding:4px 8px;font-size:11px;display:none;">✕</button>
       </div>
       <button class="delete-btn">× 削除</button>
       <input type="color" class="color-input" value="${c.color}" style="display:none;">
@@ -856,8 +968,9 @@ function renderCharaGrid() {
     const swatch    = card.querySelector('.swatch');
     const nameInput = card.querySelector('.name-input');
     const posSel    = card.querySelector('.pos-select');
-    const spriteSel = card.querySelector('.sprite-select');
     const sprThumb  = card.querySelector('.sprite-thumb');
+    const sprPickBtn  = card.querySelector('.sprite-pick-btn');
+    const sprClearBtn = card.querySelector('.sprite-clear-btn');
     const delBtn    = card.querySelector('.delete-btn');
     const colorInp  = card.querySelector('.color-input');
 
@@ -869,29 +982,19 @@ function renderCharaGrid() {
     nameInput.addEventListener('input', () => { c.name = nameInput.value.trim(); });
     posSel.addEventListener('change', () => { c.position = posSel.value; });
 
-    // スプライト選択ドロップダウン
-    const sprGroupKeys = Object.keys(getSpriteGroups());
-    if (sprGroupKeys.length === 0) {
-      spriteSel.options[0].textContent = '（同期してください）';
-    } else {
-      sprGroupKeys.forEach(grp => {
-        const opt = document.createElement('option');
-        opt.value = grp;
-        opt.textContent = grp;
-        if (c.sprite === grp) opt.selected = true;
-        spriteSel.appendChild(opt);
-      });
-    }
-    function updateSprThumb(grp) {
-      const map = buildSpritesMap(grp);
+    // スプライトピッカーボタン
+    function updateSprThumb(spriteRef) {
+      const map = buildSpritesMap(spriteRef);
       const url = map.normal || Object.values(map)[0] || '';
       sprThumb.src = url;
       sprThumb.style.display = url ? 'inline' : 'none';
+      sprClearBtn.style.display = url ? 'inline' : 'none';
     }
     updateSprThumb(c.sprite);
-    spriteSel.addEventListener('change', () => {
-      c.sprite = spriteSel.value;
-      updateSprThumb(c.sprite);
+    sprPickBtn.addEventListener('click', () => openSpritePicker(idx));
+    sprClearBtn.addEventListener('click', () => {
+      c.sprite = '';
+      updateSprThumb('');
     });
 
     delBtn.addEventListener('click', () => {
@@ -1550,6 +1653,101 @@ renderBgmChips();
     });
   }
 })();
+</script>
+
+<!-- スプライトピッカーモーダル -->
+<div id="sprite-picker-overlay">
+  <div class="sprite-picker">
+    <div class="spr-picker-header">
+      <span>🖼️ 立ち絵を選ぶ</span>
+      <button class="spr-picker-close" id="spr-picker-close">✕ 閉じる</button>
+    </div>
+    <div class="spr-picker-tabs" id="spr-tabs"></div>
+    <div class="spr-picker-grid" id="spr-grid"></div>
+    <div class="spr-picker-footer">
+      <button class="action-btn" id="spr-none-btn" style="color:#889;">✕ 立ち絵なし</button>
+      <button class="action-btn" id="spr-picker-close2">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script src="../assets/30_sprites/sprite-manifest.js"></script>
+<script>
+// ═══ スプライトピッカー ═══
+let _pickerCharaIdx = null;
+let _pickerActiveCat = null;
+
+function openSpritePicker(charaIdx) {
+  _pickerCharaIdx = charaIdx;
+  const manifest = window.SPRITE_MANIFEST || [];
+  if (!_pickerActiveCat && manifest.length > 0) _pickerActiveCat = manifest[0].id;
+  renderPickerTabs();
+  renderPickerGrid();
+  document.getElementById('sprite-picker-overlay').classList.add('open');
+}
+
+function closeSpritePicker() {
+  document.getElementById('sprite-picker-overlay').classList.remove('open');
+}
+
+function renderPickerTabs() {
+  const manifest = window.SPRITE_MANIFEST || [];
+  const container = document.getElementById('spr-tabs');
+  container.innerHTML = '';
+  manifest.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'spr-tab' + (_pickerActiveCat === cat.id ? ' active' : '');
+    btn.textContent = cat.label + ' (' + cat.sprites.length + ')';
+    btn.addEventListener('click', () => {
+      _pickerActiveCat = cat.id;
+      renderPickerTabs();
+      renderPickerGrid();
+    });
+    container.appendChild(btn);
+  });
+}
+
+function renderPickerGrid() {
+  const manifest = window.SPRITE_MANIFEST || [];
+  const cat = manifest.find(c => c.id === _pickerActiveCat);
+  const container = document.getElementById('spr-grid');
+  container.innerHTML = '';
+  if (!cat) return;
+  const currentUrl = _pickerCharaIdx !== null ? (state.charas[_pickerCharaIdx]?.sprite || '') : '';
+  cat.sprites.forEach(spr => {
+    const item = document.createElement('div');
+    item.className = 'spr-item' + (currentUrl === spr.url ? ' selected' : '');
+    const img = document.createElement('img');
+    img.src = spr.url;
+    img.alt = spr.label;
+    img.loading = 'lazy';
+    const lbl = document.createElement('div');
+    lbl.className = 'spr-lbl';
+    lbl.textContent = spr.label;
+    item.appendChild(img);
+    item.appendChild(lbl);
+    item.addEventListener('click', () => {
+      if (_pickerCharaIdx === null) return;
+      state.charas[_pickerCharaIdx].sprite = spr.url;
+      closeSpritePicker();
+      renderCharaGrid();
+    });
+    container.appendChild(item);
+  });
+}
+
+document.getElementById('spr-picker-close').addEventListener('click', closeSpritePicker);
+document.getElementById('spr-picker-close2').addEventListener('click', closeSpritePicker);
+document.getElementById('spr-none-btn').addEventListener('click', () => {
+  if (_pickerCharaIdx !== null) {
+    state.charas[_pickerCharaIdx].sprite = '';
+    closeSpritePicker();
+    renderCharaGrid();
+  }
+});
+document.getElementById('sprite-picker-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeSpritePicker();
+});
 </script>
 </body>
 </html>
