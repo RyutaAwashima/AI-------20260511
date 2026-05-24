@@ -1,20 +1,33 @@
 /**
  * renderer.js
  * 背景・立ち絵・テキスト・選択肢の描画を担当
+ * v2: 3スロット対応・スライドイン/アウトアニメ・シーントランジション
  */
 
 const Renderer = (() => {
   // DOM refs
   const elBg        = document.getElementById('background');
   const elSpriteL   = document.getElementById('sprite-left');
+  const elSpriteC   = document.getElementById('sprite-center');
   const elSpriteR   = document.getElementById('sprite-right');
   const elBodyL     = document.getElementById('sprite-left-body');
+  const elBodyC     = document.getElementById('sprite-center-body');
   const elBodyR     = document.getElementById('sprite-right-body');
   const elCharName  = document.getElementById('char-name');
   const elText      = document.getElementById('text-content');
   const elIndicator = document.getElementById('click-indicator');
   const elChoices   = document.getElementById('choices');
   const elPrompt    = document.getElementById('choice-prompt');
+  const elTrans     = document.getElementById('scene-transition');
+
+  // スロット → DOM マッピング
+  function _slotEl(slot) {
+    return slot === 'left' ? elSpriteL : slot === 'center' ? elSpriteC : elSpriteR;
+  }
+  function _slotBody(slot) {
+    return slot === 'left' ? elBodyL : slot === 'center' ? elBodyC : elBodyR;
+  }
+  const ALL_SLOTS = ['left', 'center', 'right'];
 
   // タイプライター
   let typeTimer = null;
@@ -114,36 +127,72 @@ const Renderer = (() => {
     return makeSpriteSVG(charData, expression);
   }
 
-  function showSprite(position, charData, expression) {
-    const el   = position === 'left' ? elSpriteL : elSpriteR;
-    const body = position === 'left' ? elBodyL   : elBodyR;
+  function showSprite(slot, charData, expression) {
+    const el   = _slotEl(slot);
+    const body = _slotBody(slot);
     body.innerHTML = makeSpriteHTML(charData, expression);
     el.classList.remove('hidden', 'inactive');
   }
 
-  function hideSprite(position) {
-    const el = position === 'left' ? elSpriteL : elSpriteR;
-    el.classList.add('hidden');
+  // スライドイン（初登場用）
+  function enterSprite(slot, charData, expression) {
+    const el   = _slotEl(slot);
+    const body = _slotBody(slot);
+    body.innerHTML = makeSpriteHTML(charData, expression);
+    // アニメクラスをリセット→再付与
+    el.classList.remove('hidden', 'inactive', 'spr-anim-left', 'spr-anim-right', 'spr-anim-center');
+    void el.offsetWidth; // reflow でアニメ再スタート
+    const animClass = slot === 'left' ? 'spr-anim-left' : 'spr-anim-right';
+    el.classList.add(animClass);
+    el.addEventListener('animationend', () => el.classList.remove(animClass), { once: true });
   }
 
-  function setActive(position) {
-    if (position === 'left') {
-      elSpriteL.classList.remove('inactive');
-      elSpriteR.classList.add('inactive');
-    } else if (position === 'right') {
-      elSpriteR.classList.remove('inactive');
-      elSpriteL.classList.add('inactive');
-    } else {
-      elSpriteL.classList.add('inactive');
-      elSpriteR.classList.add('inactive');
-    }
+  // 右スロット → 中央スロットへクロスディゾルブ
+  function moveRightToCenter() {
+    elBodyC.innerHTML = elBodyR.innerHTML; // 右の内容をコピー
+    elSpriteC.classList.remove('hidden', 'inactive', 'spr-anim-left', 'spr-anim-right', 'spr-anim-center');
+    void elSpriteC.offsetWidth;
+    elSpriteC.classList.add('spr-anim-center');
+    elSpriteC.addEventListener('animationend', () => elSpriteC.classList.remove('spr-anim-center'), { once: true });
+    elSpriteR.classList.add('hidden');
+    elSpriteR.classList.remove('spr-anim-left', 'spr-anim-right', 'spr-anim-center');
+  }
+
+  function hideSprite(slot) {
+    const el = _slotEl(slot);
+    el.classList.add('hidden');
+    el.classList.remove('spr-anim-left', 'spr-anim-right', 'spr-anim-center');
+  }
+
+  function setActive(slot) {
+    ALL_SLOTS.forEach(s => {
+      const el = _slotEl(s);
+      if (el.classList.contains('hidden')) return;
+      if (s === slot) {
+        el.classList.remove('inactive');
+      } else {
+        el.classList.add('inactive');
+      }
+    });
+  }
+
+  // シーントランジション（フェードアウト→callback→フェードイン）
+  function playSceneTransition(callback) {
+    elTrans.style.opacity = '1';
+    setTimeout(() => {
+      callback();
+      setTimeout(() => { elTrans.style.opacity = '0'; }, 80);
+    }, 380);
   }
 
   // ナレーション
   function showNarration(text, onTyped) {
     elCharName.classList.add('hidden');
     elText.className = 'narration';
-    setActive(null);
+    ALL_SLOTS.forEach(s => {
+      const el = _slotEl(s);
+      if (!el.classList.contains('hidden')) el.classList.add('inactive');
+    });
     elIndicator.classList.remove('visible');
     typewrite(text, () => {
       elIndicator.classList.add('visible');
@@ -151,13 +200,13 @@ const Renderer = (() => {
     });
   }
 
-  // セリフ
-  function showDialogue(charData, position, expression, text, onTyped) {
+  // セリフ（slot: 'left'|'center'|'right'）
+  function showDialogue(charData, slot, expression, text, onTyped) {
     elCharName.textContent = charData.name;
     elCharName.classList.remove('hidden');
     elText.className = '';
-    showSprite(position, charData, expression);
-    setActive(position);
+    showSprite(slot, charData, expression);
+    setActive(slot);
     elIndicator.classList.remove('visible');
     typewrite(text, () => {
       elIndicator.classList.add('visible');
@@ -194,14 +243,21 @@ const Renderer = (() => {
   }
 
   function clearSprites() {
-    hideSprite('left');
-    hideSprite('right');
+    ALL_SLOTS.forEach(s => {
+      const el = _slotEl(s);
+      el.classList.add('hidden');
+      el.classList.remove('inactive', 'spr-anim-left', 'spr-anim-right', 'spr-anim-center');
+      _slotBody(s).innerHTML = '';
+    });
   }
 
   return {
     setBackground,
     showNarration,
     showDialogue,
+    enterSprite,
+    moveRightToCenter,
+    playSceneTransition,
     showChoices,
     hideChoices,
     clearSprites,

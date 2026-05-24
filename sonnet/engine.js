@@ -17,6 +17,19 @@ const Engine = (() => {
   let waitingClick = false;
   let inChoice     = false;
 
+  // ── ステージ管理 ──
+  let _onStage    = [];   // 登場順のキャラキー配列（最大3）
+  let _onStageExpr = {};  // { charKey: expression }
+
+  // スロット決定（登場順インデックス→ 'left'|'center'|'right'）
+  function _getSlot(charKey) {
+    const idx = _onStage.indexOf(charKey);
+    if (_onStage.length <= 2) {
+      return idx === 0 ? 'left' : 'right';
+    }
+    return ['left', 'center', 'right'][idx] || 'right';
+  }
+
   // ── DOM refs ──
   const elOverlay    = document.getElementById('overlay');
   const elDevStory   = document.getElementById('dev-story');
@@ -41,6 +54,8 @@ const Engine = (() => {
     lineIndex    = 0;
     waitingClick = false;
     inChoice     = false;
+    _onStage     = [];
+    _onStageExpr = {};
     Audio.stop();
     Renderer.clearSprites();
     Renderer.hideChoices();
@@ -171,29 +186,41 @@ const Engine = (() => {
     elOverlay.classList.add('hidden');
     devUpdate({ story: s.meta.title });
 
-    gotoScene(s.scenes[0].id);
+    gotoScene(s.scenes[0].id, true); // 初回はトランジションなし
   }
 
   // ── シーン遷移 ──
-  function gotoScene(sceneId) {
+  function gotoScene(sceneId, skipTransition = false) {
     const scene = sceneMap[sceneId];
     if (!scene) { showEnd(); return; }
 
-    currentScene = scene;
-    lineIndex    = 0;
-    waitingClick = false;
-    inChoice     = false;
+    function doScene() {
+      currentScene = scene;
+      lineIndex    = 0;
+      waitingClick = false;
+      inChoice     = false;
+      _onStage     = [];
+      _onStageExpr = {};
 
-    // 背景・BGM適用
-    const bgData = story.meta.assets.backgrounds[scene.background];
-    Renderer.setBackground(scene.background, bgData);
-    if (scene.bgm) {
-      const bgmData = story.meta.assets.bgm ? story.meta.assets.bgm[scene.bgm] : null;
-      Audio.play(scene.bgm, bgmData);
+      Renderer.clearSprites();
+
+      // 背景・BGM適用
+      const bgData = story.meta.assets.backgrounds[scene.background];
+      Renderer.setBackground(scene.background, bgData);
+      if (scene.bgm) {
+        const bgmData = story.meta.assets.bgm ? story.meta.assets.bgm[scene.bgm] : null;
+        Audio.play(scene.bgm, bgmData);
+      }
+
+      devUpdate({ scene: scene.id, bgm: scene.bgm || '—' });
+      processLine();
     }
 
-    devUpdate({ scene: scene.id, bgm: scene.bgm || '—' });
-    processLine();
+    if (skipTransition) {
+      doScene();
+    } else {
+      Renderer.playSceneTransition(doScene);
+    }
   }
 
   // ── ライン処理 ──
@@ -211,10 +238,35 @@ const Engine = (() => {
         break;
 
       case 'dialogue': {
-        const charData = story.meta.assets.characters[line.character];
+        const charKey  = line.character;
+        const charData = story.meta.assets.characters[charKey];
         if (!charData) break;
         waitingClick = false;
-        Renderer.showDialogue(charData, line.position, line.expression, line.text, () => {
+
+        const isNew = !_onStage.includes(charKey);
+        if (isNew) {
+          const prevCount = _onStage.length;
+          _onStage.push(charKey);
+
+          if (prevCount === 0) {
+            // 1人目: 左からスライドイン
+            Renderer.enterSprite('left', charData, line.expression);
+          } else if (prevCount === 1) {
+            // 2人目: 右からスライドイン
+            Renderer.enterSprite('right', charData, line.expression);
+          } else if (prevCount === 2) {
+            // 3人目: 右→中央移動 + 新キャラ右スライドイン
+            Renderer.moveRightToCenter();
+            Renderer.enterSprite('right', charData, line.expression);
+          }
+          // 4人目以降は右スロットを上書き（稀ケース）
+        }
+
+        // 現在の表情を記憶
+        _onStageExpr[charKey] = line.expression;
+
+        const slot = _getSlot(charKey);
+        Renderer.showDialogue(charData, slot, line.expression, line.text, () => {
           waitingClick = true;
         });
         break;
