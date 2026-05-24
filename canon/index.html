@@ -238,6 +238,27 @@
       border-radius: 50%;
       flex-shrink: 0;
     }
+    .chip-bg-thumb {
+      width: 24px; height: 16px;
+      border-radius: 3px;
+      object-fit: cover;
+      flex-shrink: 0;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .preview-play-btn {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #ccd;
+      font-size: 9px;
+      line-height: 1;
+      padding: 2px 5px;
+      border-radius: 10px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.1s;
+    }
+    .preview-play-btn:hover { background: rgba(126,87,194,0.5); }
+    .preview-play-btn.playing { background: rgba(126,87,194,0.7); color: #fff; }
 
     /* ローダー / エラー */
     .loading {
@@ -408,23 +429,29 @@
     <div style="margin-bottom:14px;">
       <label class="field">背景プリセット（複数選択OK）</label>
       <div class="chip-grid" id="bg-chips"></div>
+      <div id="bg-preview-panel" style="display:none;margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid #2a2a50;">
+        <img id="bg-preview-img" src="" alt="" style="width:100%;height:150px;object-fit:cover;display:block;" />
+        <div id="bg-preview-label" style="text-align:center;font-size:11px;color:#889;padding:3px 6px;background:#0a0a1f;"></div>
+      </div>
     </div>
 
-    <div>
+    <div style="margin-bottom:10px;">
       <label class="field">BGMプリセット（複数選択OK）</label>
       <div class="chip-grid" id="bgm-chips"></div>
     </div>
 
-    <div style="margin-top:10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-      <span style="font-size:11.5px;color:#667;font-weight:bold;white-space:nowrap;">Drive同期：</span>
-      <button class="action-btn cat-sync-btn" data-cat="bgm"    style="padding:6px 10px;">🎵 BGM</button>
-      <button class="action-btn cat-sync-btn" data-cat="bg"     style="padding:6px 10px;">🖼 背景</button>
-      <button class="action-btn cat-sync-btn" data-cat="sprite" style="padding:6px 10px;">🧑 スプライト</button>
-      <button class="action-btn cat-sync-btn" data-cat="se"     style="padding:6px 10px;">🔊 SE</button>
-      <button class="action-btn cat-sync-btn" data-cat="all"    style="padding:6px 10px;opacity:.75;">🔨 全て</button>
-      <button class="action-btn" id="btn-sync-presets"          style="padding:6px 10px;">🔄 同期のみ</button>
-      <span id="preset-sync-status" style="font-size:11.5px;color:#667;"></span>
-    </div>
+    <details style="margin-top:8px;">
+      <summary style="cursor:pointer;user-select:none;font-size:11.5px;color:#556;padding:4px 0;">⚙ Drive同期（旧機能）</summary>
+      <div style="margin-top:6px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+        <button class="action-btn cat-sync-btn" data-cat="bgm"    style="padding:6px 10px;">🎵 BGM</button>
+        <button class="action-btn cat-sync-btn" data-cat="bg"     style="padding:6px 10px;">🖼 背景</button>
+        <button class="action-btn cat-sync-btn" data-cat="sprite" style="padding:6px 10px;">🧑 スプライト</button>
+        <button class="action-btn cat-sync-btn" data-cat="se"     style="padding:6px 10px;">🔊 SE</button>
+        <button class="action-btn cat-sync-btn" data-cat="all"    style="padding:6px 10px;opacity:.75;">🔨 全て</button>
+        <button class="action-btn" id="btn-sync-presets"          style="padding:6px 10px;">🔄 同期のみ</button>
+        <span id="preset-sync-status" style="font-size:11.5px;color:#667;"></span>
+      </div>
+    </details>
 
     <div style="margin-top:14px;">
       <button class="primary-btn" id="btn-convert">🎼 ノベルJSONに変換する</button>
@@ -477,37 +504,127 @@ const CONFIG = {
 //  ※ sonnet 側 (stories.js / audio.js / renderer.js) と同じ key を使用
 // ═══════════════════════════════════════════════════════
 let BG_PRESETS = {
-  classroom:    { label: '教室',           color: '#1e2a4a', accent: '#2a3a5a' },
-  classroom_old:{ label: '廃校の教室',     color: '#1a1520', accent: '#2a2030' },
-  rooftop:      { label: '屋上（夕暮れ）', color: '#2a1a0a', accent: '#3a2810' },
-  hallway:      { label: '校舎の廊下',     color: '#1c1c28', accent: '#2c2c38' },
-  forest:       { label: '森',             color: '#0e2a1a', accent: '#1e4030' },
-  town:         { label: '街並み',         color: '#1f2030', accent: '#2f3045' },
-  night_street: { label: '夜の街',         color: '#0a0a1a', accent: '#1a1a2e' },
-  beach:        { label: '海辺',           color: '#0a2030', accent: '#1a3550' },
-  room:         { label: '部屋',           color: '#251c1c', accent: '#352828' },
-  library:      { label: '図書室',         color: '#1f1810', accent: '#2f2418' },
-  shrine:       { label: '神社・古い建物', color: '#1a1010', accent: '#2a1a14' },
-  sky:          { label: '青空',           color: '#3a5a8a', accent: '#5a7aaa' },
-  dungeon:      { label: '地下迷宮',       color: '#100a0a', accent: '#201818' },
-  spaceship:    { label: '宇宙船内',       color: '#0a0a20', accent: '#1a1a3a' },
+  bg_cafe:                      { label: 'カフェ',           color: '#1e1a14', accent: '#2e2818', imageUrl: '../assets/40_backgrounds/bg_cafe.jpg' },
+  bg_computer_room_hellowork:   { label: 'パソコン教室',     color: '#0e1420', accent: '#1e2030', imageUrl: '../assets/40_backgrounds/bg_computer_room_hellowork.jpg' },
+  bg_dote:                      { label: '土手',             color: '#1e2a14', accent: '#2e3c18', imageUrl: '../assets/40_backgrounds/bg_dote.jpg' },
+  bg_dote_yuyake:               { label: '土手（夕焼け）',   color: '#2a1a0a', accent: '#3c2a10', imageUrl: '../assets/40_backgrounds/bg_dote_yuyake.jpg' },
+  bg_doujou:                    { label: '道場',             color: '#1a1410', accent: '#2a2018', imageUrl: '../assets/40_backgrounds/bg_doujou.jpg' },
+  bg_eki_homedoor_train:        { label: '電車・ホーム',     color: '#0a1020', accent: '#1a2030', imageUrl: '../assets/40_backgrounds/bg_eki_homedoor_train.jpg' },
+  bg_hatake:                    { label: '畑',               color: '#1a2a10', accent: '#2a3c18', imageUrl: '../assets/40_backgrounds/bg_hatake.jpg' },
+  bg_heaven_tengoku:            { label: '天国',             color: '#3a5a8a', accent: '#5a7aaa', imageUrl: '../assets/40_backgrounds/bg_heaven_tengoku.jpg' },
+  bg_hell_jigoku:               { label: '地獄',             color: '#2a0808', accent: '#3c1010', imageUrl: '../assets/40_backgrounds/bg_hell_jigoku.jpg' },
+  bg_himawari_hatake:           { label: 'ひまわり畑',       color: '#3a3a0a', accent: '#5a5a10', imageUrl: '../assets/40_backgrounds/bg_himawari_hatake.jpg' },
+  bg_hospital:                  { label: '病院（外観）',     color: '#1e2a30', accent: '#2e3c40', imageUrl: '../assets/40_backgrounds/bg_hospital.jpg' },
+  bg_hospital_chiryou:          { label: '病院（治療室）',   color: '#1c2c2a', accent: '#2c3c38', imageUrl: '../assets/40_backgrounds/bg_hospital_chiryou.jpg' },
+  bg_hospital_room:             { label: '病院（病室）',     color: '#1e2c28', accent: '#2e3c38', imageUrl: '../assets/40_backgrounds/bg_hospital_room.jpg' },
+  bg_house:                     { label: '家（外観）',       color: '#1a2010', accent: '#2a2c18', imageUrl: '../assets/40_backgrounds/bg_house.jpg' },
+  bg_house_kitchen:             { label: '台所',             color: '#1c1a14', accent: '#2c2820', imageUrl: '../assets/40_backgrounds/bg_house_kitchen.jpg' },
+  bg_house_living:              { label: 'リビング',         color: '#1e1c18', accent: '#2e2c24', imageUrl: '../assets/40_backgrounds/bg_house_living.jpg' },
+  bg_inaka_tanbo:               { label: '田んぼ',           color: '#1a2810', accent: '#2a3818', imageUrl: '../assets/40_backgrounds/bg_inaka_tanbo.jpg' },
+  bg_kaden_ryouhanten:          { label: '家電量販店',       color: '#0a1020', accent: '#1a2030', imageUrl: '../assets/40_backgrounds/bg_kaden_ryouhanten.jpg' },
+  bg_kamogawa:                  { label: '鴨川',             color: '#0a1c20', accent: '#1a2c30', imageUrl: '../assets/40_backgrounds/bg_kamogawa.jpg' },
+  bg_kamogawa_noone:            { label: '鴨川（人なし）',   color: '#0a1c20', accent: '#1a2c30', imageUrl: '../assets/40_backgrounds/bg_kamogawa_noone.jpg' },
+  bg_kawara:                    { label: '河原',             color: '#1a1c10', accent: '#2a2c18', imageUrl: '../assets/40_backgrounds/bg_kawara.jpg' },
+  bg_lounge:                    { label: 'ラウンジ',         color: '#14100c', accent: '#24201c', imageUrl: '../assets/40_backgrounds/bg_lounge.png' },
+  bg_machi_nihon:               { label: '日本の街',         color: '#1e2030', accent: '#2e3040', imageUrl: '../assets/40_backgrounds/bg_machi_nihon.jpg' },
+  bg_moon_getsumen_earth:       { label: '月面・地球',       color: '#080814', accent: '#18182a', imageUrl: '../assets/40_backgrounds/bg_moon_getsumen_earth.jpg' },
+  bg_moon_sky_mangetsu:         { label: '満月の空',         color: '#0a0a1e', accent: '#1a1a2e', imageUrl: '../assets/40_backgrounds/bg_moon_sky_mangetsu.jpg' },
+  bg_music_live_stage:          { label: 'ライブステージ',   color: '#0a0614', accent: '#1a1224', imageUrl: '../assets/40_backgrounds/bg_music_live_stage.jpg' },
+  bg_natural_flower:            { label: '花畑',             color: '#1e3028', accent: '#2e4038', imageUrl: '../assets/40_backgrounds/bg_natural_flower.jpg' },
+  bg_natural_mori:              { label: '森',               color: '#0e2a1a', accent: '#1e4030', imageUrl: '../assets/40_backgrounds/bg_natural_mori.jpg' },
+  bg_natural_nanohana_batake:   { label: '菜の花畑',         color: '#2a2c0a', accent: '#3a3c18', imageUrl: '../assets/40_backgrounds/bg_natural_nanohana_batake.jpg' },
+  bg_natural_ocean:             { label: '海（自然）',       color: '#0a2030', accent: '#1a3550', imageUrl: '../assets/40_backgrounds/bg_natural_ocean.jpg' },
+  bg_natural_umi:               { label: '海',               color: '#0a2030', accent: '#1a3550', imageUrl: '../assets/40_backgrounds/bg_natural_umi.jpg' },
+  bg_network_dennou_sekai:      { label: '電脳世界',         color: '#040828', accent: '#0a1240', imageUrl: '../assets/40_backgrounds/bg_network_dennou_sekai.jpg' },
+  bg_ocean_suiheisen:           { label: '水平線',           color: '#0a1c30', accent: '#1a2c40', imageUrl: '../assets/40_backgrounds/bg_ocean_suiheisen.jpg' },
+  bg_oshiro_castle:             { label: 'お城',             color: '#1a1820', accent: '#2a283c', imageUrl: '../assets/40_backgrounds/bg_oshiro_castle.jpg' },
+  bg_outside_buildings:         { label: 'ビル街',           color: '#181820', accent: '#28283a', imageUrl: '../assets/40_backgrounds/bg_outside_buildings.jpg' },
+  bg_outside_buildings_yuyake:  { label: 'ビル街（夕焼け）', color: '#2a1808', accent: '#3c2a10', imageUrl: '../assets/40_backgrounds/bg_outside_buildings_yuyake.jpg' },
+  bg_outside_jutaku:            { label: '住宅街',           color: '#1c2010', accent: '#2c3018', imageUrl: '../assets/40_backgrounds/bg_outside_jutaku.jpg' },
+  bg_outside_jutaku_yoru:       { label: '住宅街（夜）',     color: '#080c10', accent: '#141820', imageUrl: '../assets/40_backgrounds/bg_outside_jutaku_yoru.jpg' },
+  bg_rain_buildings:            { label: '雨のビル街',       color: '#141820', accent: '#243040', imageUrl: '../assets/40_backgrounds/bg_rain_buildings.jpg' },
+  bg_room_syosai_book:          { label: '書斎',             color: '#1c1810', accent: '#2c2818', imageUrl: '../assets/40_backgrounds/bg_room_syosai_book.jpg' },
+  bg_ryokan_hiroen:             { label: '旅館（宴会）',     color: '#1c1408', accent: '#2c2010', imageUrl: '../assets/40_backgrounds/bg_ryokan_hiroen.jpg' },
+  bg_sabaku:                    { label: '砂漠',             color: '#2a2010', accent: '#3a3020', imageUrl: '../assets/40_backgrounds/bg_sabaku.jpg' },
+  bg_sakura_night:              { label: '夜桜',             color: '#1a0a20', accent: '#2a1430', imageUrl: '../assets/40_backgrounds/bg_sakura_night.jpg' },
+  bg_school:                    { label: '学校（外観）',     color: '#1e2a4a', accent: '#2a3a5a', imageUrl: '../assets/40_backgrounds/bg_school.jpg' },
+  bg_school_room:               { label: '教室',             color: '#1e2a4a', accent: '#2a3a5a', imageUrl: '../assets/40_backgrounds/bg_school_room.jpg' },
+  bg_school_room2:              { label: '教室2',            color: '#1e2a4a', accent: '#2a3a5a', imageUrl: '../assets/40_backgrounds/bg_school_room2.jpg' },
+  bg_school_room2_yuyake:       { label: '教室2（夕焼け）',  color: '#2a1a0a', accent: '#3c2a14', imageUrl: '../assets/40_backgrounds/bg_school_room2_yuyake.jpg' },
+  bg_school_room_back:          { label: '教室（後ろから）', color: '#1e2a4a', accent: '#2a3a5a', imageUrl: '../assets/40_backgrounds/bg_school_room_back.jpg' },
+  bg_school_rouka:              { label: '学校の廊下',       color: '#1c1c28', accent: '#2c2c38', imageUrl: '../assets/40_backgrounds/bg_school_rouka.jpg' },
+  bg_snow_buildings:            { label: '雪のビル街',       color: '#1c2030', accent: '#2c3040', imageUrl: '../assets/40_backgrounds/bg_snow_buildings.jpg' },
+  bg_snow_jutaku:               { label: '雪の住宅街',       color: '#1c2028', accent: '#2c3038', imageUrl: '../assets/40_backgrounds/bg_snow_jutaku.jpg' },
+  bg_snow_jutaku_yoru:          { label: '雪の住宅街（夜）', color: '#0c1018', accent: '#1c2028', imageUrl: '../assets/40_backgrounds/bg_snow_jutaku_yoru.jpg' },
+  bg_taki:                      { label: '滝',               color: '#0e2820', accent: '#1e3830', imageUrl: '../assets/40_backgrounds/bg_taki.jpg' },
+  bg_wedding_chapel:            { label: 'チャペル',         color: '#1e1820', accent: '#2e2830', imageUrl: '../assets/40_backgrounds/bg_wedding_chapel.jpg' },
+  bg_yozora_night_sky:          { label: '夜空',             color: '#0a0a1e', accent: '#1a1a30', imageUrl: '../assets/40_backgrounds/bg_yozora_night_sky.jpg' },
+  bg_yozora_night_sky_building: { label: '夜空とビル',       color: '#0a0a1e', accent: '#1a1a30', imageUrl: '../assets/40_backgrounds/bg_yozora_night_sky_building.jpg' },
 };
 
-// audio.js の BGM_PATTERNS と同じ key
+// BGM カテゴリ（assets/10_bgm/ 以下の実ファイル）
 let BGM_PRESETS = {
-  eerie:      '不気味（低い唸り）',
-  emotional:  '切ない（ピアノ風）',
-  hopeful:    '希望（明るめ）',
-  cheerful:   'ポップ（軽快）',
-  silly:      'コミカル',
-  triumphant: '大げさ・勝利',
-  tense:      '緊張',
-  dramatic:   'ドラマチック',
-  action:     'アクション',
+  action:    { label: 'アクション',   url: '../assets/10_bgm/action/bgm_action_アクション01_01.mp3',   loop: true  },
+  calm:      { label: '穏やか',       url: '../assets/10_bgm/calm/bgm_calm_穏やか01_01.mp3',           loop: true  },
+  daily:     { label: '日常',         url: '../assets/10_bgm/daily/bgm_daily_日常01_01.mp3',           loop: true  },
+  emotional: { label: '感動・切ない', url: '../assets/10_bgm/emotional/bgm_emotional_感動01_01.mp3',   loop: true  },
+  ending:    { label: 'エンディング', url: '../assets/10_bgm/ending/bgm_ending_エンディング01_01.mp3', loop: false },
+  mystery:   { label: 'ミステリー',   url: '../assets/10_bgm/mystery/bgm_mystery_ミステリー01_01.mp3', loop: true  },
+  tension:   { label: '緊張',         url: '../assets/10_bgm/tension/bgm_tension_緊張01_01.mp3',       loop: true  },
 };
 
-// スプライトプリセット（Driveから同期） [{id, group, expression, url}]
-let SPRITE_PRESETS = [];
+// スプライトプリセット（assets/30_sprites/ 以下の実ファイル）
+let SPRITE_PRESETS = [
+  { id: 'spr_biyou_normal',           group: 'biyou',           expression: 'normal', url: '../assets/30_sprites/spr_biyou_normal.png' },
+  { id: 'spr_boy_blue_normal',        group: 'boy_blue',        expression: 'normal', url: '../assets/30_sprites/spr_boy_blue_normal.png' },
+  { id: 'spr_boy_brown_normal',       group: 'boy_brown',       expression: 'normal', url: '../assets/30_sprites/spr_boy_brown_normal.png' },
+  { id: 'spr_boy_normal',             group: 'boy',             expression: 'normal', url: '../assets/30_sprites/spr_boy_normal.png' },
+  { id: 'spr_boy_orange_normal',      group: 'boy_orange',      expression: 'normal', url: '../assets/30_sprites/spr_boy_orange_normal.png' },
+  { id: 'spr_boy_yellow_normal',      group: 'boy_yellow',      expression: 'normal', url: '../assets/30_sprites/spr_boy_yellow_normal.png' },
+  { id: 'spr_burikko_normal',         group: 'burikko',         expression: 'normal', url: '../assets/30_sprites/spr_burikko_normal.png' },
+  { id: 'spr_couple_normal',          group: 'couple',          expression: 'normal', url: '../assets/30_sprites/spr_couple_normal.png' },
+  { id: 'spr_dragon_black_normal',    group: 'dragon_black',    expression: 'normal', url: '../assets/30_sprites/spr_dragon_black_normal.png' },
+  { id: 'spr_dragon_blue_normal',     group: 'dragon_blue',     expression: 'normal', url: '../assets/30_sprites/spr_dragon_blue_normal.png' },
+  { id: 'spr_dragon_yellow_normal',   group: 'dragon_yellow',   expression: 'normal', url: '../assets/30_sprites/spr_dragon_yellow_normal.png' },
+  { id: 'spr_dwarf_normal',           group: 'dwarf',           expression: 'normal', url: '../assets/30_sprites/spr_dwarf_normal.png' },
+  { id: 'spr_galman_normal',          group: 'galman',          expression: 'normal', url: '../assets/30_sprites/spr_galman_normal.png' },
+  { id: 'spr_girl_normal',            group: 'girl',            expression: 'normal', url: '../assets/30_sprites/spr_girl_normal.png' },
+  { id: 'spr_goblin_normal',          group: 'goblin',          expression: 'normal', url: '../assets/30_sprites/spr_goblin_normal.png' },
+  { id: 'spr_golem_normal',           group: 'golem',           expression: 'normal', url: '../assets/30_sprites/spr_golem_normal.png' },
+  { id: 'spr_higerobot_black_normal', group: 'higerobot_black', expression: 'normal', url: '../assets/30_sprites/spr_higerobot_black_normal.png' },
+  { id: 'spr_higerobot_white_normal', group: 'higerobot_white', expression: 'normal', url: '../assets/30_sprites/spr_higerobot_white_normal.png' },
+  { id: 'spr_innercolor_normal',      group: 'innercolor',      expression: 'normal', url: '../assets/30_sprites/spr_innercolor_normal.png' },
+  { id: 'spr_jirai_normal',           group: 'jirai',           expression: 'normal', url: '../assets/30_sprites/spr_jirai_normal.png' },
+  { id: 'spr_kamisama_normal',        group: 'kamisama',        expression: 'normal', url: '../assets/30_sprites/spr_kamisama_normal.png' },
+  { id: 'spr_kiriman_normal',         group: 'kiriman',         expression: 'normal', url: '../assets/30_sprites/spr_kiriman_normal.png' },
+  { id: 'spr_kiriwoman_normal',       group: 'kiriwoman',       expression: 'normal', url: '../assets/30_sprites/spr_kiriwoman_normal.png' },
+  { id: 'spr_kyodairobot_normal',     group: 'kyodairobot',     expression: 'normal', url: '../assets/30_sprites/spr_kyodairobot_normal.png' },
+  { id: 'spr_meganeman_normal',       group: 'meganeman',       expression: 'normal', url: '../assets/30_sprites/spr_meganeman_normal.png' },
+  { id: 'spr_meganewoman_normal',     group: 'meganewoman',     expression: 'normal', url: '../assets/30_sprites/spr_meganewoman_normal.png' },
+  { id: 'spr_moesode_normal',         group: 'moesode',         expression: 'normal', url: '../assets/30_sprites/spr_moesode_normal.png' },
+  { id: 'spr_nihilman_normal',        group: 'nihilman',        expression: 'normal', url: '../assets/30_sprites/spr_nihilman_normal.png' },
+  { id: 'spr_nihilwoman_normal',      group: 'nihilwoman',      expression: 'normal', url: '../assets/30_sprites/spr_nihilwoman_normal.png' },
+  { id: 'spr_orc_normal',             group: 'orc',             expression: 'normal', url: '../assets/30_sprites/spr_orc_normal.png' },
+  { id: 'spr_robot_blue_normal',      group: 'robot_blue',      expression: 'normal', url: '../assets/30_sprites/spr_robot_blue_normal.png' },
+  { id: 'spr_robot_normal',           group: 'robot',           expression: 'normal', url: '../assets/30_sprites/spr_robot_normal.png' },
+  { id: 'spr_robot_red_normal',       group: 'robot_red',       expression: 'normal', url: '../assets/30_sprites/spr_robot_red_normal.png' },
+  { id: 'spr_sil_boy_normal',         group: 'sil_boy',         expression: 'normal', url: '../assets/30_sprites/spr_sil_boy_normal.png' },
+  { id: 'spr_sil_girl_normal',        group: 'sil_girl',        expression: 'normal', url: '../assets/30_sprites/spr_sil_girl_normal.png' },
+  { id: 'spr_sil_man_normal',         group: 'sil_man',         expression: 'normal', url: '../assets/30_sprites/spr_sil_man_normal.png' },
+  { id: 'spr_sil_middleman_normal',   group: 'sil_middleman',   expression: 'normal', url: '../assets/30_sprites/spr_sil_middleman_normal.png' },
+  { id: 'spr_sil_middlewoman_normal', group: 'sil_middlewoman',  expression: 'normal', url: '../assets/30_sprites/spr_sil_middlewoman_normal.png' },
+  { id: 'spr_sil_oldman_normal',      group: 'sil_oldman',      expression: 'normal', url: '../assets/30_sprites/spr_sil_oldman_normal.png' },
+  { id: 'spr_sil_oldwoman_normal',    group: 'sil_oldwoman',    expression: 'normal', url: '../assets/30_sprites/spr_sil_oldwoman_normal.png' },
+  { id: 'spr_sil_woman_normal',       group: 'sil_woman',       expression: 'normal', url: '../assets/30_sprites/spr_sil_woman_normal.png' },
+  { id: 'spr_sil_youngman_normal',    group: 'sil_youngman',    expression: 'normal', url: '../assets/30_sprites/spr_sil_youngman_normal.png' },
+  { id: 'spr_sil_youngwoman_normal',  group: 'sil_youngwoman',  expression: 'normal', url: '../assets/30_sprites/spr_sil_youngwoman_normal.png' },
+  { id: 'spr_slime_normal',           group: 'slime',           expression: 'normal', url: '../assets/30_sprites/spr_slime_normal.png' },
+  { id: 'spr_socialrobot_normal',     group: 'socialrobot',     expression: 'normal', url: '../assets/30_sprites/spr_socialrobot_normal.png' },
+  { id: 'spr_spiritual_normal',       group: 'spiritual',       expression: 'normal', url: '../assets/30_sprites/spr_spiritual_normal.png' },
+  { id: 'spr_unicorn_normal',         group: 'unicorn',         expression: 'normal', url: '../assets/30_sprites/spr_unicorn_normal.png' },
+  { id: 'spr_usuge_normal',           group: 'usuge',           expression: 'normal', url: '../assets/30_sprites/spr_usuge_normal.png' },
+  { id: 'spr_yandere_normal',         group: 'yandere',         expression: 'normal', url: '../assets/30_sprites/spr_yandere_normal.png' },
+];
 
 // renderer.js の EXPRESSION_FACES と同じ key
 const EXPRESSIONS = [
@@ -527,7 +644,7 @@ const CHARA_COLORS = [
 // ═══════════════════════════════════════════════════════
 let state = {
   charas: [],          // [{ key, name, role, color, position, sprite }]
-  selectedBgs: ['classroom'],
+  selectedBgs: ['bg_school_room'],
   selectedBgms: ['emotional'],
   resultJson: null,
   ariaRowNum: null,    // Ariaから読んだ行番号（保存時に上書きされる）
@@ -793,28 +910,85 @@ $('btn-add-chara').addEventListener('click', () => {
 // ═══════════════════════════════════════════════════════
 //  STEP 3：プリセットチップ
 // ═══════════════════════════════════════════════════════
+// BG プレビューパネル表示
+function showBgPreview(key) {
+  const data = BG_PRESETS[key];
+  const panel = $('bg-preview-panel');
+  const img   = $('bg-preview-img');
+  const lbl   = $('bg-preview-label');
+  if (!data || !data.imageUrl) { panel.style.display = 'none'; return; }
+  img.src = data.imageUrl;
+  lbl.textContent = data.label;
+  panel.style.display = '';
+}
+
 function renderBgChips() {
   elBgChips.innerHTML = '';
   Object.entries(BG_PRESETS).forEach(([key, data]) => {
     const chip = document.createElement('span');
     chip.className = 'chip' + (state.selectedBgs.includes(key) ? ' selected' : '');
-    chip.innerHTML = `<span class="dot" style="background:${data.color};border:1px solid ${data.accent}"></span>${esc(data.label)}`;
+    if (data.imageUrl) {
+      chip.innerHTML = `<img class="chip-bg-thumb" src="${data.imageUrl}" alt=""/>${esc(data.label)}`;
+    } else {
+      chip.innerHTML = `<span class="dot" style="background:${data.color};border:1px solid ${data.accent}"></span>${esc(data.label)}`;
+    }
     chip.addEventListener('click', () => {
       const i = state.selectedBgs.indexOf(key);
       if (i >= 0) state.selectedBgs.splice(i, 1);
       else state.selectedBgs.push(key);
       renderBgChips();
+      showBgPreview(key);
     });
     elBgChips.appendChild(chip);
   });
+  // 初回 or 再描画時：選択中の先頭をプレビュー
+  if (state.selectedBgs.length > 0) showBgPreview(state.selectedBgs[0]);
+}
+
+// BGM 試聴状態
+let _bgmPreviewAudio = null;
+let _bgmPreviewKey   = null;
+function stopBgmPreview() {
+  if (_bgmPreviewAudio) {
+    _bgmPreviewAudio.pause();
+    _bgmPreviewAudio.currentTime = 0;
+    _bgmPreviewAudio = null;
+  }
+  _bgmPreviewKey = null;
 }
 
 function renderBgmChips() {
   elBgmChips.innerHTML = '';
-  Object.entries(BGM_PRESETS).forEach(([key, label]) => {
+  Object.entries(BGM_PRESETS).forEach(([key, data]) => {
+    const isPlaying = (_bgmPreviewKey === key);
     const chip = document.createElement('span');
     chip.className = 'chip' + (state.selectedBgms.includes(key) ? ' selected' : '');
-    chip.textContent = label;
+
+    const playBtn = document.createElement('button');
+    playBtn.className = 'preview-play-btn' + (isPlaying ? ' playing' : '');
+    playBtn.textContent = isPlaying ? '■' : '▶';
+    playBtn.title = '試聴';
+    playBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const wasPlaying = (_bgmPreviewKey === key);
+      stopBgmPreview();
+      if (!wasPlaying && data.url) {
+        const audio = new Audio(data.url);
+        audio.loop = data.loop !== false;
+        audio.volume = 0.6;
+        audio.play().catch(() => {});
+        _bgmPreviewAudio = audio;
+        _bgmPreviewKey   = key;
+        audio.addEventListener('ended', () => {
+          _bgmPreviewKey = null; _bgmPreviewAudio = null;
+          renderBgmChips();
+        });
+      }
+      renderBgmChips();
+    });
+
+    chip.appendChild(playBtn);
+    chip.appendChild(document.createTextNode(data.label));
     chip.addEventListener('click', () => {
       const i = state.selectedBgms.indexOf(key);
       if (i >= 0) state.selectedBgms.splice(i, 1);
@@ -884,7 +1058,7 @@ async function syncPresetsFromDrive() {
       p.bgm.forEach(item => {
         const key = String(item.id || '').trim();
         if (!key) return;
-        nextBgm[key] = item.name || key;
+        nextBgm[key] = { label: item.name || key, url: item.url || '', loop: item.loop !== false };
       });
       if (Object.keys(nextBgm).length > 0) BGM_PRESETS = nextBgm;
     }
@@ -974,7 +1148,7 @@ function buildConvertPrompt() {
   const bgLines = state.selectedBgs
     .map(k => `- ${k}（${BG_PRESETS[k].label}）`).join('\n');
   const bgmLines = state.selectedBgms
-    .map(k => `- ${k}（${BGM_PRESETS[k]}）`).join('\n');
+    .map(k => `- ${k}（${BGM_PRESETS[k].label}）`).join('\n');
 
   return [
     '次の物語をサウンドノベル用のシーンスクリプトに変換してください。',
@@ -1104,7 +1278,10 @@ function buildFinalJson(scenes) {
   [...usedBgs].forEach(k => { if (BG_PRESETS[k]) backgrounds[k] = { ...BG_PRESETS[k] }; });
   const bgm = {};
   [...usedBgms].forEach(k => {
-    if (BGM_PRESETS[k] !== undefined) bgm[k] = { id: k, name: BGM_PRESETS[k] };
+    if (BGM_PRESETS[k] !== undefined) {
+      const d = BGM_PRESETS[k];
+      bgm[k] = { id: k, name: d.label, url: d.url || '', loop: d.loop !== false };
+    }
   });
 
   return {
@@ -1160,7 +1337,7 @@ $('btn-copy').addEventListener('click', () => {
 $('btn-reset').addEventListener('click', () => {
   if (!confirm('入力と結果をすべて消して最初からやり直します。よろしいですか？')) return;
   elText.value = ''; elTitle.value = ''; elGenre.value = '';
-  state = { charas: [], selectedBgs: ['classroom'], selectedBgms: ['emotional'], resultJson: null, ariaRowNum: null };
+  state = { charas: [], selectedBgs: ['bg_school_room'], selectedBgms: ['emotional'], resultJson: null, ariaRowNum: null };
   elCharaGrid.innerHTML = '';
   elJsonPrev.textContent = '';
   elStatRow.innerHTML = '';
