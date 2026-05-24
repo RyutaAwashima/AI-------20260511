@@ -40,6 +40,32 @@
     .header h1 { font-size: 22px; color: #c5caf7; letter-spacing: 0.04em; }
     .header p { font-size: 12.5px; color: #667; margin-top: 5px; }
 
+    /* 下書き保存バー */
+    #draft-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 11.5px;
+      color: #445;
+      margin-top: 4px;
+      height: 22px;
+    }
+    #draft-status { transition: color 0.3s; }
+    #draft-status.saved   { color: #4caf50; }
+    #draft-status.saving  { color: #888; }
+    #btn-draft-clear {
+      background: none;
+      border: none;
+      color: #445;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0 4px;
+      text-decoration: underline;
+      display: none;
+    }
+    #btn-draft-clear.visible { display: inline; }
+
     /* カード */
     .card {
       background: #13132a;
@@ -533,6 +559,10 @@
     <div class="badge">Mythos / Canon</div>
     <h1>📜 カノン — テキストをノベルゲームに仕立てるエディター</h1>
     <p>あらすじや小説をペーストするだけで、ソネットで遊べるノベルゲームJSONに変換するよ</p>
+    <div id="draft-bar">
+      <span id="draft-status"></span>
+      <button id="btn-draft-clear">下書きをクリア</button>
+    </div>
   </div>
 
   <!-- ─────────── STEP 1：原稿入力 ─────────── -->
@@ -1697,6 +1727,106 @@ function toKey(name, idx) {
 // 初期描画
 renderBgChips();
 renderBgmChips();
+
+// ═══════════════════════════════════════════════════════
+//  下書き自動保存（localStorage）
+// ═══════════════════════════════════════════════════════
+const DRAFT_KEY = 'canon_draft_v1';
+const elDraftStatus = $('draft-status');
+const elBtnDraftClear = $('btn-draft-clear');
+
+function _draftTimestamp(ts) {
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${d.getMonth()+1}/${d.getDate()} ${hh}:${mm}`;
+}
+
+function saveDraft() {
+  try {
+    const draft = {
+      title:       elTitle.value,
+      genre:       elGenre.value,
+      text:        elText.value,
+      charas:      JSON.parse(JSON.stringify(state.charas)),
+      selectedBgs: [...state.selectedBgs],
+      excludedBgms:[...state.excludedBgms],
+      savedAt:     Date.now(),
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    elDraftStatus.textContent = `自動保存済 ${_draftTimestamp(draft.savedAt)}`;
+    elDraftStatus.className = 'saved';
+    elBtnDraftClear.classList.add('visible');
+  } catch(e) {
+    // localStorage が使えない環境（プライベートモードなど）では無視
+  }
+}
+
+function restoreDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return false;
+    const draft = JSON.parse(raw);
+
+    // フォームへ反映
+    if (draft.title)  elTitle.value = draft.title;
+    if (draft.genre)  elGenre.value = draft.genre;
+    if (draft.text)   elText.value  = draft.text;
+
+    // state へ反映
+    if (Array.isArray(draft.charas)       && draft.charas.length)       state.charas       = draft.charas;
+    if (Array.isArray(draft.selectedBgs)  && draft.selectedBgs.length)  state.selectedBgs  = draft.selectedBgs;
+    if (Array.isArray(draft.excludedBgms))                               state.excludedBgms = draft.excludedBgms;
+
+    // キャラカードを再描画
+    if (state.charas.length) renderCharas();
+
+    // BG/BGM チップを再描画
+    renderBgChips();
+    renderBgmChips();
+
+    elDraftStatus.textContent = `下書き復元 ${_draftTimestamp(draft.savedAt)}`;
+    elDraftStatus.className = 'saved';
+    elBtnDraftClear.classList.add('visible');
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+// デバウンス保存（1.5秒後）
+let _draftTimer = null;
+function scheduleSave() {
+  clearTimeout(_draftTimer);
+  elDraftStatus.textContent = '保存中…';
+  elDraftStatus.className = 'saving';
+  _draftTimer = setTimeout(saveDraft, 1500);
+}
+
+// 下書きクリア
+elBtnDraftClear.addEventListener('click', () => {
+  if (!confirm('下書きを消去しますか？')) return;
+  try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+  elDraftStatus.textContent = '';
+  elDraftStatus.className = '';
+  elBtnDraftClear.classList.remove('visible');
+});
+
+// 入力変更を監視
+elTitle.addEventListener('input', scheduleSave);
+elGenre.addEventListener('input', scheduleSave);
+elText.addEventListener('input',  scheduleSave);
+
+// state 変更時にも保存（BG/BGM/キャラ操作後）
+// →各操作関数の末尾で scheduleSave() を呼ぶのが理想だが
+//   まず MutationObserver でチップコンテナの変化を監視する簡易実装
+const _draftObserver = new MutationObserver(() => scheduleSave());
+_draftObserver.observe($('chara-grid'), { childList: true, subtree: true, characterData: true });
+_draftObserver.observe($('bg-chips'),   { childList: true, subtree: true, attributes: true });
+_draftObserver.observe($('bgm-chips'),  { childList: true, subtree: true, attributes: true });
+
+// ページ読み込み時に復元
+restoreDraft();
 
 // GASから配信された場合はホームリンクをexec URLのguideデフォルトに切り替え
 (function(){

@@ -99,8 +99,8 @@ const Renderer = (() => {
         <rect x="15" y="82" width="70" height="110" rx="10" fill="url(#g_${charData.name})"/>
         <text x="50" y="62" text-anchor="middle" font-size="30">${face}</text>
       </svg>
+      <div class="spr-bubble">${face}</div>
       <span class="sprite-name" style="color:${color}">${charData.name}</span>
-      <span class="sprite-expression">${expression}</span>
     `;
   }
 
@@ -117,11 +117,12 @@ const Renderer = (() => {
 
   function makeSpriteHTML(charData, expression) {
     const spriteUrl = resolveSpriteUrl(charData, expression);
+    const face = EXPRESSION_FACES[expression] || '😐';
     if (spriteUrl) {
       return `
+        <div class="spr-bubble">${face}</div>
         <img class="sprite-illustration" src="${spriteUrl}" alt="${charData.name}" />
         <span class="sprite-name" style="color:${charData.color || '#ddd'}">${charData.name}</span>
-        <span class="sprite-expression">${expression}</span>
       `;
     }
     return makeSpriteSVG(charData, expression);

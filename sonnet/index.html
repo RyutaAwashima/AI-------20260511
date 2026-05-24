@@ -122,9 +122,39 @@
       font-size: 1.625cqw;
       font-weight: bold;
     }
+    .sprite-body { position: relative; }
     .sprite-body svg { opacity: 0.85; }
     .sprite-name { letter-spacing: 0.08em; }
-    .sprite-expression { font-size: 1.25cqw; opacity: 0.6; font-weight: normal; }
+
+    /* 顔文字吹き出し */
+    .spr-bubble {
+      position: absolute;
+      top:   1.25cqw;
+      right: -1.5cqw;
+      width:  4.75cqw;
+      height: 4.75cqw;
+      background: rgba(255,255,255,0.93);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.9cqw;
+      line-height: 1;
+      box-shadow: 0 2px 7px rgba(0,0,0,0.28);
+      z-index: 10;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .spr-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -0.9cqw;
+      left:   0.9cqw;
+      border-left:  1.1cqw solid transparent;
+      border-right: 0.7cqw solid transparent;
+      border-top:   1cqw   solid rgba(255,255,255,0.93);
+    }
+    .sprite.inactive .spr-bubble { opacity: 0.3; }
 
     .sprite.inactive { opacity: 0.4; }
 
