@@ -233,6 +233,13 @@
       border-color: #7e57c2;
       color: #fff;
     }
+    .chip.excluded {
+      background: #2a1010;
+      border-color: #5a2020;
+      color: #775;
+      opacity: 0.65;
+    }
+    .chip.excluded .preview-play-btn { opacity: 0.4; }
     .chip .dot {
       width: 10px; height: 10px;
       border-radius: 50%;
@@ -436,7 +443,7 @@
     </div>
 
     <div style="margin-bottom:10px;">
-      <label class="field">BGMプリセット（複数選択OK）</label>
+      <label class="field">BGM（クリックで<b>除外</b> — 何も除外しなければ場面に合わせて自動選択）</label>
       <div class="chip-grid" id="bgm-chips"></div>
     </div>
 
@@ -563,14 +570,15 @@ let BG_PRESETS = {
 };
 
 // BGM カテゴリ（assets/10_bgm/ 以下の実ファイル）
+// tags: LLM が場面の雰囲気から自動割り当てする際のヒント
 let BGM_PRESETS = {
-  action:    { label: 'アクション',   url: '../assets/10_bgm/action/bgm_action_アクション01_01.mp3',   loop: true  },
-  calm:      { label: '穏やか',       url: '../assets/10_bgm/calm/bgm_calm_穏やか01_01.mp3',           loop: true  },
-  daily:     { label: '日常',         url: '../assets/10_bgm/daily/bgm_daily_日常01_01.mp3',           loop: true  },
-  emotional: { label: '感動・切ない', url: '../assets/10_bgm/emotional/bgm_emotional_感動01_01.mp3',   loop: true  },
-  ending:    { label: 'エンディング', url: '../assets/10_bgm/ending/bgm_ending_エンディング01_01.mp3', loop: false },
-  mystery:   { label: 'ミステリー',   url: '../assets/10_bgm/mystery/bgm_mystery_ミステリー01_01.mp3', loop: true  },
-  tension:   { label: '緊張',         url: '../assets/10_bgm/tension/bgm_tension_緊張01_01.mp3',       loop: true  },
+  action:    { label: 'アクション',   tags: ['戦闘', 'クライマックス', '興奮', 'アクション'],         url: '../assets/10_bgm/action/bgm_action_アクション01_01.mp3',   loop: true  },
+  calm:      { label: '穏やか',       tags: ['和やか', '安らぎ', 'のどか', '平和', '癒し'],           url: '../assets/10_bgm/calm/bgm_calm_穏やか01_01.mp3',           loop: true  },
+  daily:     { label: '日常',         tags: ['日常', '学校', '友達', '明るい', '平凡'],               url: '../assets/10_bgm/daily/bgm_daily_日常01_01.mp3',           loop: true  },
+  emotional: { label: '感動・切ない', tags: ['感動', '別れ', '涙', '再会', '切ない', '思い出'],       url: '../assets/10_bgm/emotional/bgm_emotional_感動01_01.mp3',   loop: true  },
+  ending:    { label: 'エンディング', tags: ['エンド', '結末', '締めくくり', '旅立ち'],               url: '../assets/10_bgm/ending/bgm_ending_エンディング01_01.mp3', loop: false },
+  mystery:   { label: 'ミステリー',   tags: ['謎', 'ホラー', '恐怖', '不気味', 'サスペンス', '探索'], url: '../assets/10_bgm/mystery/bgm_mystery_ミステリー01_01.mp3', loop: true  },
+  tension:   { label: '緊張',         tags: ['緊張', '危機', '対立', '恐れ', '焦り', 'スリル'],       url: '../assets/10_bgm/tension/bgm_tension_緊張01_01.mp3',       loop: true  },
 };
 
 // スプライトプリセット（assets/30_sprites/ 以下の実ファイル）
@@ -645,7 +653,7 @@ const CHARA_COLORS = [
 let state = {
   charas: [],          // [{ key, name, role, color, position, sprite }]
   selectedBgs: ['bg_school_room'],
-  selectedBgms: ['emotional'],
+  excludedBgms: [],    // BGM除外リスト（クリックで除外、空=全BGM自動選択）
   resultJson: null,
   ariaRowNum: null,    // Ariaから読んだ行番号（保存時に上書きされる）
 };
@@ -960,9 +968,11 @@ function stopBgmPreview() {
 function renderBgmChips() {
   elBgmChips.innerHTML = '';
   Object.entries(BGM_PRESETS).forEach(([key, data]) => {
-    const isPlaying = (_bgmPreviewKey === key);
+    const isPlaying  = (_bgmPreviewKey === key);
+    const isExcluded = state.excludedBgms.includes(key);
     const chip = document.createElement('span');
-    chip.className = 'chip' + (state.selectedBgms.includes(key) ? ' selected' : '');
+    chip.className = 'chip' + (isExcluded ? ' excluded' : '');
+    chip.title = isExcluded ? 'クリックで除外解除' : 'クリックで除外';
 
     const playBtn = document.createElement('button');
     playBtn.className = 'preview-play-btn' + (isPlaying ? ' playing' : '');
@@ -987,12 +997,14 @@ function renderBgmChips() {
       renderBgmChips();
     });
 
+    const labelEl = document.createElement('span');
+    labelEl.textContent = (isExcluded ? '✕ ' : '') + data.label;
     chip.appendChild(playBtn);
-    chip.appendChild(document.createTextNode(data.label));
+    chip.appendChild(labelEl);
     chip.addEventListener('click', () => {
-      const i = state.selectedBgms.indexOf(key);
-      if (i >= 0) state.selectedBgms.splice(i, 1);
-      else state.selectedBgms.push(key);
+      const i = state.excludedBgms.indexOf(key);
+      if (i >= 0) state.excludedBgms.splice(i, 1);
+      else state.excludedBgms.push(key);
       renderBgmChips();
     });
     elBgmChips.appendChild(chip);
@@ -1085,9 +1097,8 @@ async function syncPresetsFromDrive() {
 
     // 選択済みが消えた場合は有効なキーに絞る
     state.selectedBgs = state.selectedBgs.filter(k => BG_PRESETS[k]);
-    state.selectedBgms = state.selectedBgms.filter(k => BGM_PRESETS[k]);
+    state.excludedBgms = state.excludedBgms.filter(k => BGM_PRESETS[k]);
     if (state.selectedBgs.length === 0) state.selectedBgs = Object.keys(BG_PRESETS).slice(0, 1);
-    if (state.selectedBgms.length === 0) state.selectedBgms = Object.keys(BGM_PRESETS).slice(0, 1);
 
     renderBgChips();
     renderBgmChips();
@@ -1110,7 +1121,6 @@ $('btn-convert').addEventListener('click', convertToNovel);
 async function convertToNovel() {
   if (state.charas.length === 0) { showErr('error-convert', 'キャラクターが0人です'); return; }
   if (state.selectedBgs.length === 0)  { showErr('error-convert', '背景を1つ以上選んでください'); return; }
-  if (state.selectedBgms.length === 0) { showErr('error-convert', 'BGMを1つ以上選んでください'); return; }
 
   // キャラのキー重複防止＆未入力名チェック
   const seen = new Set();
@@ -1147,8 +1157,12 @@ function buildConvertPrompt() {
     .map(c => `- ${c.key}（名前: ${c.name}, 立ち位置: ${c.position}）`).join('\n');
   const bgLines = state.selectedBgs
     .map(k => `- ${k}（${BG_PRESETS[k].label}）`).join('\n');
-  const bgmLines = state.selectedBgms
-    .map(k => `- ${k}（${BGM_PRESETS[k].label}）`).join('\n');
+  const availableBgms = Object.keys(BGM_PRESETS).filter(k => !state.excludedBgms.includes(k));
+  const bgmLines = availableBgms
+    .map(k => {
+      const d = BGM_PRESETS[k];
+      return `- ${k}（${d.label}）→ ${(d.tags || []).join('・')}`;
+    }).join('\n');
 
   return [
     '次の物語をサウンドノベル用DSLスクリプトに変換してください。',
@@ -1172,7 +1186,7 @@ function buildConvertPrompt() {
     '【使える背景】',
     bgLines,
     '',
-    '【使えるBGM】',
+    '【BGM（場面の雰囲気に合わせて自動で割り当ててください）】',
     bgmLines,
     '',
     '【物語】',
@@ -1199,12 +1213,13 @@ function buildConvertPrompt() {
 function parseDSL(text) {
   const charKeys = new Set(state.charas.map(c => c.key));
   const bgKeys   = new Set(state.selectedBgs);
-  const bgmKeys  = new Set(state.selectedBgms);
+  const bgmKeys  = new Set(Object.keys(BGM_PRESETS));
 
   const lines = text.split(/\r?\n/);
   const scenes = [];
   let currentBg  = state.selectedBgs[0];
-  let currentBgm = state.selectedBgms[0];
+  const _availBgms = Object.keys(BGM_PRESETS).filter(k => !state.excludedBgms.includes(k));
+  let currentBgm = _availBgms[0] || Object.keys(BGM_PRESETS)[0];
   let buffer = [];
 
   function flush() {
@@ -1371,7 +1386,7 @@ $('btn-copy').addEventListener('click', () => {
 $('btn-reset').addEventListener('click', () => {
   if (!confirm('入力と結果をすべて消して最初からやり直します。よろしいですか？')) return;
   elText.value = ''; elTitle.value = ''; elGenre.value = '';
-  state = { charas: [], selectedBgs: ['bg_school_room'], selectedBgms: ['emotional'], resultJson: null, ariaRowNum: null };
+  state = { charas: [], selectedBgs: ['bg_school_room'], excludedBgms: [], resultJson: null, ariaRowNum: null };
   elCharaGrid.innerHTML = '';
   elJsonPrev.textContent = '';
   elStatRow.innerHTML = '';
