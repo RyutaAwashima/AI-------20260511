@@ -546,6 +546,37 @@
       border-top: 1px solid #2a2a50;
       gap: 8px;
     }
+
+    /* シーン自動解析エリア */
+    #scene-list-area {
+      background: #080818;
+      border: 1px solid #1a1a38;
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+      font-size: 11.5px;
+    }
+    #scene-list-area .scene-list-header {
+      color: #556;
+      font-size: 11px;
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .scene-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+      border-bottom: 1px solid #141430;
+    }
+    .scene-row:last-child { border-bottom: none; }
+    .scene-num { color: #334; min-width: 18px; font-size: 10.5px; text-align: right; }
+    .scene-bg-thumb { width: 36px; height: 22px; object-fit: cover; border-radius: 3px; flex-shrink: 0; }
+    .scene-bg-dot   { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .scene-bg-label { color: #c5caf7; font-weight: bold; min-width: 90px; font-size: 11px; }
+    .scene-desc     { color: #778; flex: 1; }
   </style>
 </head>
 <body>
@@ -629,6 +660,11 @@
 
     <div style="margin-bottom:14px;">
       <label class="field">背景プリセット（複数選択OK）</label>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <button class="action-btn" id="btn-bg-auto" style="padding:5px 12px;">🔍 シーンを自動解析して選ぶ</button>
+        <span id="bg-auto-status" style="font-size:11px;color:#667;"></span>
+      </div>
+      <div id="scene-list-area" style="display:none;"></div>
       <div class="chip-grid" id="bg-chips"></div>
       <div id="bg-preview-panel" style="display:none;margin-top:8px;border-radius:8px;overflow:hidden;border:1px solid #2a2a50;">
         <img id="bg-preview-img" src="" alt="" style="width:100%;height:150px;object-fit:cover;display:block;" />
@@ -1144,6 +1180,89 @@ function renderBgChips() {
   // 初回 or 再描画時：選択中の先頭をプレビュー
   if (state.selectedBgs.length > 0) showBgPreview(state.selectedBgs[0]);
 }
+
+// ═══════════════════════════════════════════════════════
+//  シーン自動解析（背景自動選択）
+// ═══════════════════════════════════════════════════════
+async function autoBgAnalyze() {
+  const text = elText.value.trim();
+  if (!text) { alert('まず STEP 1 で本文を入力してください。'); return; }
+
+  const btn      = $('btn-bg-auto');
+  const elStatus = $('bg-auto-status');
+  btn.disabled = true;
+  elStatus.textContent = '解析中…';
+  elStatus.style.color = '#888';
+
+  const bgList = Object.entries(BG_PRESETS)
+    .map(([k, v]) => `${k} → ${v.label}`).join('\n');
+
+  const prompt = [
+    '次の物語に登場する場面・ロケーションを分析し、各シーンに最も合う背景をJSON配列で答えてください。',
+    '',
+    '【出力形式】（JSON配列のみ。前後に説明を付けないこと）',
+    '[',
+    '  { "scene": "場面の説明（15字以内）", "bg_key": "bg_xxxx" },',
+    '  ...',
+    ']',
+    '',
+    '【背景プリセット一覧（bg_key はこの中から選ぶこと）】',
+    bgList,
+    '',
+    '【物語】',
+    text,
+  ].join('\n');
+
+  try {
+    const resp = await callGas({ action: 'extract', prompt });
+    const m = resp.text.match(/\[[\s\S]*?\]/);
+    if (!m) throw new Error('JSONを取得できませんでした。もう一度お試しください。');
+    const scenes = JSON.parse(m[0]);
+    const validKeys = new Set(Object.keys(BG_PRESETS));
+    const valid = scenes.filter(s => s && validKeys.has(s.bg_key));
+    if (valid.length === 0) throw new Error('有効な背景キーが見つかりませんでした。');
+
+    // 重複除去・順序を保ったまま selectedBgs を更新
+    const uniqueKeys = [...new Set(valid.map(s => s.bg_key))];
+    state.selectedBgs = uniqueKeys;
+    renderBgChips();
+    renderSceneList(valid);
+    scheduleSave();
+
+    elStatus.textContent = `✅ ${valid.length} シーン検出・背景 ${uniqueKeys.length} 種を自動選択`;
+    elStatus.style.color = '#4caf50';
+  } catch(e) {
+    elStatus.textContent = '❌ ' + e.message;
+    elStatus.style.color = '#ef5350';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function renderSceneList(scenes) {
+  const area = $('scene-list-area');
+  area.style.display = '';
+  const rows = scenes.map((s, i) => {
+    const bg = BG_PRESETS[s.bg_key] || {};
+    const thumb = bg.imageUrl
+      ? `<img class="scene-bg-thumb" src="${bg.imageUrl}" alt="" />`
+      : `<span class="scene-bg-dot" style="background:${bg.color||'#333'};"></span>`;
+    return `<div class="scene-row">
+      <span class="scene-num">${i + 1}</span>
+      ${thumb}
+      <span class="scene-bg-label">${esc(bg.label || s.bg_key)}</span>
+      <span class="scene-desc">${esc(s.scene || '')}</span>
+    </div>`;
+  }).join('');
+  area.innerHTML = `
+    <div class="scene-list-header">
+      <span>📍 検出シーン一覧</span>
+      <button onclick="this.closest('#scene-list-area').style.display='none'" style="background:none;border:none;color:#445;cursor:pointer;font-size:11px;">✕ 閉じる</button>
+    </div>
+    ${rows}`;
+}
+
+$('btn-bg-auto').addEventListener('click', autoBgAnalyze);
 
 // BGM 試聴状態
 let _bgmPreviewAudio = null;
