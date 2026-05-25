@@ -1336,6 +1336,7 @@ async function convertToNovel() {
     renderResult();
     enableCard(elCardStep4);
     elCardStep4.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    saveDraft(); // JSON生成完了を即座に保存
   } catch (e) {
     showErr('error-convert', e.message);
   } finally {
@@ -1588,6 +1589,11 @@ $('btn-reset').addEventListener('click', () => {
   disableCard(elCardStep2);
   disableCard(elCardStep3);
   disableCard(elCardStep4);
+  // 下書きも消す
+  try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
+  elDraftStatus.textContent = '';
+  elDraftStatus.className = '';
+  elBtnDraftClear.classList.remove('visible');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 });
 
@@ -1751,6 +1757,7 @@ function saveDraft() {
       charas:      JSON.parse(JSON.stringify(state.charas)),
       selectedBgs: [...state.selectedBgs],
       excludedBgms:[...state.excludedBgms],
+      resultJson:  state.resultJson ? JSON.parse(JSON.stringify(state.resultJson)) : null,
       savedAt:     Date.now(),
     };
     localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
@@ -1768,6 +1775,9 @@ function restoreDraft() {
     if (!raw) return false;
     const draft = JSON.parse(raw);
 
+    // オブザーバーを一時停止（復元中の誤トリガーを防ぐ）
+    _draftObserver.disconnect();
+
     // フォームへ反映
     if (draft.title)  elTitle.value = draft.title;
     if (draft.genre)  elGenre.value = draft.genre;
@@ -1778,18 +1788,33 @@ function restoreDraft() {
     if (Array.isArray(draft.selectedBgs)  && draft.selectedBgs.length)  state.selectedBgs  = draft.selectedBgs;
     if (Array.isArray(draft.excludedBgms))                               state.excludedBgms = draft.excludedBgms;
 
-    // キャラカードを再描画
-    if (state.charas.length) renderCharas();
+    // キャラカードを再描画（STEP 2 を有効化）
+    if (state.charas.length) {
+      renderCharaGrid();
+      enableCard(elCardStep2);
+      enableCard(elCardStep3);
+    }
 
     // BG/BGM チップを再描画
     renderBgChips();
     renderBgmChips();
+
+    // 生成済み JSON があれば STEP 4 も復元
+    if (draft.resultJson) {
+      state.resultJson = draft.resultJson;
+      renderResult();
+      enableCard(elCardStep4);
+    }
+
+    // オブザーバーを再開
+    _reconnectObserver();
 
     elDraftStatus.textContent = `下書き復元 ${_draftTimestamp(draft.savedAt)}`;
     elDraftStatus.className = 'saved';
     elBtnDraftClear.classList.add('visible');
     return true;
   } catch(e) {
+    _reconnectObserver();
     return false;
   }
 }
@@ -1818,12 +1843,15 @@ elGenre.addEventListener('input', scheduleSave);
 elText.addEventListener('input',  scheduleSave);
 
 // state 変更時にも保存（BG/BGM/キャラ操作後）
-// →各操作関数の末尾で scheduleSave() を呼ぶのが理想だが
-//   まず MutationObserver でチップコンテナの変化を監視する簡易実装
+// MutationObserver でチップコンテナ・キャラグリッドの変化を監視
 const _draftObserver = new MutationObserver(() => scheduleSave());
-_draftObserver.observe($('chara-grid'), { childList: true, subtree: true, characterData: true });
-_draftObserver.observe($('bg-chips'),   { childList: true, subtree: true, attributes: true });
-_draftObserver.observe($('bgm-chips'),  { childList: true, subtree: true, attributes: true });
+
+function _reconnectObserver() {
+  _draftObserver.observe($('chara-grid'), { childList: true, subtree: true, characterData: true });
+  _draftObserver.observe($('bg-chips'),   { childList: true, subtree: true, attributes: true });
+  _draftObserver.observe($('bgm-chips'),  { childList: true, subtree: true, attributes: true });
+}
+_reconnectObserver();
 
 // ページ読み込み時に復元
 restoreDraft();
